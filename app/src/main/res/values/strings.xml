@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">TestingApp</string>
+    <string name="action_settings">Settings</string>
+    <string name="empty_email">Enter an email</string>
+    <string name="noInternet">You don\'t have internet</string>
+    <string name="internetRequired">Internet access required</string>
+    <string name="internetNoDatabaseCon">You have internet, but database can\'t be reached</string>
+    <string name="internetAndDatabaseConnected">Internet and a database connection has been established</string>
+    <string name="sixDigitPwHelper">Enter 6 digit passcode below!</string>
+    <string name="loginText">Click to login!</string>
+</resources>
