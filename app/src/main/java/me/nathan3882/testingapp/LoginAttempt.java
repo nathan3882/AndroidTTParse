@@ -15,17 +15,14 @@ public class LoginAttempt {
         this.emailText = emailText;
 
         if (!connection.connectionEstablished()) {
-            setUnsuccessfulReason("Database connection not established");
-            setSuccessful(false);
+            setSuccessful(false, "Database connection not established");
         } else {
             String sqlPassword = getPasswordFromSql();
             if (sqlPassword.equals("invalid email")) { //= 'invalid email' when record / email doesnt exists
-                setUnsuccessfulReason("Incorrect email!");
-                setSuccessful(false);
+                setSuccessful(false, "Incorrect email!");
                 return;
             } else if (!sqlPassword.equals(sqlPassword)) {
-                setUnsuccessfulReason("Incorrect password!");
-                setSuccessful(false);
+                setSuccessful(false, "Incorrect password");
                 return;
             }
             setSuccessful(true);
@@ -54,8 +51,9 @@ public class LoginAttempt {
         return has;
     }
 
-    private void setSuccessful(boolean wasSuccessful) {
+    private void setSuccessful(boolean wasSuccessful, String... unsuccessfulReason) {
         this.wasSuccessful = wasSuccessful;
+        if (!wasSuccessful) setUnsuccessfulReason(unsuccessfulReason[0]);
     }
 
     public boolean wasSuccessful() {
