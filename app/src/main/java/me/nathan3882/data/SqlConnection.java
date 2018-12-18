@@ -99,6 +99,9 @@ public class SqlConnection {
     }
 
     public boolean connectionEstablished() {
+        if (this.connection == null) {
+            this.connection = newCon(); //updates network connection
+        }
         return this.connection != null;
     }
 
