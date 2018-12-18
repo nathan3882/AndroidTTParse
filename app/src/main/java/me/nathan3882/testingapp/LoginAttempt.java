@@ -1,7 +1,7 @@
 package me.nathan3882.testingapp;
 
+import me.nathan3882.data.Encryption;
 import me.nathan3882.data.SqlConnection;
-import me.nathan3882.data.SqlQuery;
 
 public class LoginAttempt {
 
@@ -9,51 +9,48 @@ public class LoginAttempt {
     private String emailText;
     private boolean wasSuccessful;
     private String unsuccessfulReason;
+    private MainActivity mainActivity;
 
-    public LoginAttempt(SqlConnection connection, long currentTimeMillis, String emailText, int localEnteredPassword) {
+    public LoginAttempt(MainActivity mainActivity, SqlConnection connection, long currentTimeMillis, String emailText, String localEnteredPassword) {
+        this.mainActivity = mainActivity;
         this.connection = connection;
         this.emailText = emailText;
 
         if (!connection.connectionEstablished()) {
-            setSuccessful(false, "Database connection not established");
+            setSuccessful(false, true, "Database connection not established");
         } else {
-            String sqlPassword = getPasswordFromSql();
-            if (sqlPassword.equals("invalid email")) { //= 'invalid email' when record / email doesnt exists
-                setSuccessful(false, "Incorrect email!");
+            String gottenDBSalt = mainActivity.getDatabaseSalt(emailText);
+            String gottenDBBytes = mainActivity.getDatabaseStoredPwBytes(emailText);
+
+            if (gottenDBBytes.equals("invalid email")) { //= 'invalid email' when record doesnt exists
+                setSuccessful(false, true, "This email is incorrect!");
                 return;
-            } else if (!sqlPassword.equals(sqlPassword)) {
-                setSuccessful(false, "Incorrect password");
+            }
+
+            boolean authenticated = Encryption.authenticate(localEnteredPassword, gottenDBBytes, gottenDBSalt);
+            if (!authenticated) {
+                String reason = "This password is incorrect!";
+                setSuccessful(false, true, reason);
                 return;
+            }else{
+                mainActivity.showToast("Welcome to the app - swipe to view other days!", "long");
             }
             setSuccessful(true);
         }
     }
 
-    public String getPasswordFromSql() throws UnsupportedOperationException {
-        if (hasSqlEntry(SqlConnection.SqlTableName.TIMETABLE_USERDATA)) {
-            SqlQuery query = new SqlQuery(getConnection());
-            query.executeQuery("SELECT password from {table} WHERE userEmail = '" + getEmailText() + "'",
-                    SqlConnection.SqlTableName.TIMETABLE_USERDATA);
-            query.next(false);
-            int one = query.getInt(1);
-            System.out.println("pw = " + one);
-            return String.valueOf(one);
-        }
-        return "invalid email";
-    }
-
-    public boolean hasSqlEntry(String table) {
-        if (!getConnection().connectionEstablished()) return false;
-        SqlQuery query = new SqlQuery(getConnection());
-        query.executeQuery("SELECT * FROM {table} WHERE userEmail = '" + getEmailText() + "'", table);
-        boolean has = query.next(false);
-
-        return has;
-    }
-
-    private void setSuccessful(boolean wasSuccessful, String... unsuccessfulReason) {
+    private void setSuccessful(boolean wasSuccessful, boolean toast, String unsuccessfulReason) {
         this.wasSuccessful = wasSuccessful;
-        if (!wasSuccessful) setUnsuccessfulReason(unsuccessfulReason[0]);
+        if (!wasSuccessful) {
+            if (toast) {
+                setUnsuccessfulReason(unsuccessfulReason);
+                mainActivity.showToast(getUnsuccessfulReason(), "short");
+            }
+        }
+    }
+
+    private void setSuccessful(boolean wasSuccessful) {
+        this.wasSuccessful = wasSuccessful;
     }
 
     public boolean wasSuccessful() {

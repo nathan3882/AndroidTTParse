@@ -14,10 +14,14 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 import me.nathan3882.data.SqlConnection;
+import me.nathan3882.data.SqlQuery;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.regex.Matcher;
@@ -25,27 +29,29 @@ import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final long TWO_SECS = 1500L;
     private static long latestEvent = System.currentTimeMillis();
     private static Context context;
-
     private static boolean doneFadeOut = false;
     private static boolean doneSecondFadeIn = false;
     private static boolean first = true;
-
     private boolean hasInternet;
     private SqlConnection sqlConnection = null;
+    private MainActivity mainActivity;
 
-    private static final long TWO_SECS = 1500L;
+    public static Context getRuntimeContext() {
+        return context;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         context = getApplicationContext();
-        updateSqlConnection();
-
+        this.mainActivity = this;
+        this.sqlConnection = new SqlConnection(this);
         final TextView loginOrRegister = findViewById(R.id.loginOrRegisterText);
-        loginOrRegister.setText("Register or login below!");
+        loginOrRegister.setText("Login below using previously made details!");
 
         final EditText emailEnter = findViewById(R.id.enterEmail);
 
@@ -53,15 +59,14 @@ public class MainActivity extends AppCompatActivity {
 
         final EditText numericPassword = findViewById(R.id.numericPassword);
 
+        final Button loginButton = findViewById(R.id.loginButton);
+
         final TextView helloText = findViewById(R.id.helloText);
         helloText.setText(html("<html><center>Hello student..."));
 
-        initViews(loginOrRegister, emailEnter, sixDigitPwHelper, numericPassword, helloText);
+        initViews(loginOrRegister, emailEnter, sixDigitPwHelper, numericPassword, helloText, loginButton);
 
         showNetworkToasts();
-
-        Button loginButton = findViewById(R.id.loginButton);
-        loginButton.setActivated(false);
 
         loginButton.setOnClickListener(getLoginBtnClickListener(loginButton, emailEnter, numericPassword));
 
@@ -75,19 +80,17 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
 
                         if (dif >= 11000L) {
-                            fadeInAlpha(emailEnter, TWO_SECS, true);
-                            fadeInAlpha(sixDigitPwHelper, TWO_SECS, true);
-                            fadeInAlpha(numericPassword, TWO_SECS, true);
+                            fadeInAlpha(TWO_SECS, true, emailEnter, sixDigitPwHelper, numericPassword, loginButton);
                             cancel();
                         }
                         if (dif >= 8000L && !doneSecondFadeIn) { //After fade out of welcome has finished
-                            fadeInAlpha(loginOrRegister, TWO_SECS, true);
+                            fadeInAlpha(TWO_SECS, true, loginOrRegister);
                             doneSecondFadeIn = true;
                         } else if (dif >= 5000L && !doneFadeOut) {
                             fadeOutAlpha(helloText, helloText.getAlpha(), TWO_SECS, true);
                             doneFadeOut = true;
                         } else if (first) {
-                            fadeInAlpha(helloText, TWO_SECS, true);
+                            fadeInAlpha(TWO_SECS, true, helloText);
                             first = false;
                         }
                     }
@@ -121,17 +124,16 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     if (isValidEmailAddress(emailText)) {
                         if (isValidPasscode(passwordText.toCharArray())) {
-                            int passwordInt = Integer.parseInt(passwordText);
-                            LoginAttempt attempt = new LoginAttempt(getSqlConnection(), System.currentTimeMillis(), emailText, passwordInt);
+                            LoginAttempt attempt = new LoginAttempt(mainActivity, getSqlConnection(), System.currentTimeMillis(), emailText, passwordText);
                             if (attempt.wasSuccessful()) {
-                                attemptLogin(currentView, emailText, Integer.parseInt(passwordText));
-                            }else{
+                                doPostLogin(currentView, emailText, passwordText);
+                            } else {
                                 showToast("Login unsuccessful! " + attempt.getUnsuccessfulReason(), "short");
                             }
-                        }else{
+                        } else {
                             showToast("That's not a valid password!", "short");
                         }
-                    }else{
+                    } else {
                         showToast("That's not a valid email!", "short");
                     }
                 }
@@ -139,10 +141,38 @@ public class MainActivity extends AppCompatActivity {
         };
     }
 
-    private void attemptLogin(View currentView, String email, int sixDigitPass) {
+    private void doPostLogin(View currentView, String email, String sixDigitPass) {
         if (sqlConnection.connectionEstablished()) { //To be safe
 
         }
+    }
+
+    public String getDatabaseStoredPwBytes(String email) {
+        SqlQuery query = new SqlQuery(sqlConnection);
+        query.executeQuery("SELECT password FROM {table} WHERE userEmail = '" + email + "'",
+                SqlConnection.SqlTableName.TIMETABLE_USERDATA);
+        ResultSet set = query.getResultSet();
+        try {
+            if (!set.next()) return "invalid email";
+            return set.getString(1);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public String getDatabaseSalt(String email) {
+        SqlQuery query = new SqlQuery(sqlConnection);
+        query.executeQuery("SELECT salt FROM {table} WHERE userEmail = '" + email + "'",
+                SqlConnection.SqlTableName.TIMETABLE_USERDATA);
+        ResultSet set = query.getResultSet();
+        try {
+            if (!set.next()) return "invalid email";
+            return set.getString(1);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private boolean isValidPasscode(char[] password) {
@@ -166,32 +196,39 @@ public class MainActivity extends AppCompatActivity {
     private void showNetworkToasts() {
         if (!hasInternet()) {
             showToast(getString(R.string.internetRequired), "long");
-        } else if (!sqlConnection.connectionEstablished()) {
-            showToast(getString(R.string.internetNoDatabaseCon), "long");
         } else {
-            showToast(getString(R.string.internetAndDatabaseConnected), "long");
+            if (!sqlConnection.connectionEstablished()) {
+                showToast(getString(R.string.internetNoDatabaseCon), "long");
+            } else{
+                showToast(getString(R.string.internetAndDatabaseConnected), "long");
+            }
         }
-    }
-
-    private void updateSqlConnection() {
-        this.sqlConnection = new SqlConnection(this);
     }
 
     private void setAlpha(View view, float f) {
         view.setAlpha(f);
     }
 
-    private Toast showToast(Context c, String text, String length, boolean show) {
+    public Toast showToast(Context c, String text, String length, boolean show) {
         Toast toast = Toast.makeText(c, text, length == "short" ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG);
         if (show) toast.show();
         return toast;
     }
 
-    private void showToast(String text, String length) {
+    public void showToast(String text, String length) {
         showToast(getApplicationContext(), text, length, true);
     }
 
-    private Animation fadeInAlpha(View view, long duration, boolean start) {
+    private void fadeInAlpha(long duration, boolean start, View... views) {
+        for (View view : views) {
+            view.setAlpha(1F);
+            Animation inAnimation = new AlphaAnimation(0F, 1F);
+            inAnimation.setDuration(duration);
+            if (start) view.startAnimation(inAnimation);
+        }
+    }
+
+    private Animation fadeInAlpha(long duration, boolean start, View view) {
         view.setAlpha(1F);
         Animation inAnimation = new AlphaAnimation(0F, 1F);
         inAnimation.setDuration(duration);
@@ -216,6 +253,7 @@ public class MainActivity extends AppCompatActivity {
             public void onAnimationStart(Animation animation) {
 
             }
+
             @Override
             public void onAnimationEnd(Animation animation) {
                 view.setAlpha(0F); //keeps it hidden
@@ -233,33 +271,26 @@ public class MainActivity extends AppCompatActivity {
         return Html.fromHtml(string);
     }
 
-    public static Context getRuntimeContext() {
-        return context;
-    }
-
     public boolean hasInternet() {
-        return fetchIp() != null;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    final URL amazonWS = new URL("http://checkip.amazonaws.com");
+                    new BufferedReader(new InputStreamReader(
+                            amazonWS.openStream()));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        hasInternet = true;
+        return hasInternet;
     }
 
-    private String fetchIp() {
-        BufferedReader reader = null;
-        try {
-            URL amazonWS = new URL("http://checkip.amazonaws.com");
-            reader = new BufferedReader(new InputStreamReader(
-                    amazonWS.openStream()));
-            hasInternet = true;
-            String ip = reader.readLine();
-            return ip;
-        } catch (Exception e) {
-            System.out.println("No Internet???");
-            hasInternet = false;
-        }
-        return null;
-    }
 
     public SqlConnection getSqlConnection() {
         if (this.sqlConnection == null || !this.sqlConnection.connectionEstablished()) {
-            updateSqlConnection();
             if (this.sqlConnection.connectionEstablished()) {
                 return this.sqlConnection;
             } else {
