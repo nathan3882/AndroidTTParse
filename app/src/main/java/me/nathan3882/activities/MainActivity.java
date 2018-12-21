@@ -1,27 +1,29 @@
-package me.nathan3882.testingapp;
+package me.nathan3882.activities;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
-import android.text.Html;
-import android.text.Spanned;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
-import android.widget.Toast;
+import android.widget.*;
+import me.nathan3882.androidttrainparse.LoginAttempt;
+import me.nathan3882.androidttrainparse.Util;
 import me.nathan3882.data.SqlConnection;
 import me.nathan3882.data.SqlQuery;
+import me.nathan3882.testingapp.R;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.regex.Matcher;
@@ -29,7 +31,8 @@ import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final long TWO_SECS = 1500L;
+    public static final String LESSON_NAME_FILE_NAME = "Lesson Names.txt";
+    private static final long ONE_HALF_SECS = 1500L;
     private static long latestEvent = System.currentTimeMillis();
     private static Context context;
     private static boolean doneFadeOut = false;
@@ -39,6 +42,10 @@ public class MainActivity extends AppCompatActivity {
     private SqlConnection sqlConnection = null;
     private MainActivity mainActivity;
 
+    private LessonSelectActivity lessonSelectActivity;
+    private List<LoginAttempt> loginAttempts;
+    private Switch addLessonInfoButton;
+
     public static Context getRuntimeContext() {
         return context;
     }
@@ -47,11 +54,16 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        loginAttempts = new LinkedList<>();
         context = getApplicationContext();
+        this.lessonSelectActivity = new LessonSelectActivity();
+
         this.mainActivity = this;
-        this.sqlConnection = new SqlConnection(this);
+        this.sqlConnection = new SqlConnection(true);
         final TextView loginOrRegister = findViewById(R.id.loginOrRegisterText);
         loginOrRegister.setText("Login below using previously made details!");
+
+        this.addLessonInfoButton = findViewById(R.id.addLessonInfoButton);
 
         final EditText emailEnter = findViewById(R.id.enterEmail);
 
@@ -62,9 +74,17 @@ public class MainActivity extends AppCompatActivity {
         final Button loginButton = findViewById(R.id.loginButton);
 
         final TextView helloText = findViewById(R.id.helloText);
-        helloText.setText(html("<html><center>Hello student..."));
+        helloText.setText(Util.html("<html><center>Hello student..."));
 
-        initViews(loginOrRegister, emailEnter, sixDigitPwHelper, numericPassword, helloText, loginButton);
+        View[] initViews = {loginOrRegister, emailEnter, sixDigitPwHelper, numericPassword, loginButton, addLessonInfoButton};
+
+        initViews(initViews);
+
+
+        if (hasEnteredLessonsBefore()) {
+            addLessonInfoButton.setVisibility(View.VISIBLE);
+        }
+
 
         showNetworkToasts();
 
@@ -78,19 +98,18 @@ public class MainActivity extends AppCompatActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-
                         if (dif >= 11000L) {
-                            fadeInAlpha(TWO_SECS, true, emailEnter, sixDigitPwHelper, numericPassword, loginButton);
+                            fadeInAlpha(ONE_HALF_SECS, true, emailEnter, addLessonInfoButton, sixDigitPwHelper, numericPassword, loginButton);
                             cancel();
                         }
                         if (dif >= 8000L && !doneSecondFadeIn) { //After fade out of welcome has finished
-                            fadeInAlpha(TWO_SECS, true, loginOrRegister);
+                            fadeInAlpha(ONE_HALF_SECS, true, loginOrRegister);
                             doneSecondFadeIn = true;
                         } else if (dif >= 5000L && !doneFadeOut) {
-                            fadeOutAlpha(helloText, helloText.getAlpha(), TWO_SECS, true);
+                            fadeOutAlpha(helloText, helloText.getAlpha(), ONE_HALF_SECS, true);
                             doneFadeOut = true;
                         } else if (first) {
-                            fadeInAlpha(TWO_SECS, true, helloText);
+                            fadeInAlpha(ONE_HALF_SECS, true, helloText);
                             first = false;
                         }
                     }
@@ -100,18 +119,19 @@ public class MainActivity extends AppCompatActivity {
         new Timer().scheduleAtFixedRate(task, 1000L, 1000L);
     }
 
-    private void initViews(View... views) {
+    private void initViews(View[] views) {
         for (View view : views) {
             view.setAlpha(0F);
         }
     }
 
-    private View.OnClickListener getLoginBtnClickListener(Button loginButton, final EditText emailBox, final EditText password) {
+    private View.OnClickListener getLoginBtnClickListener(View view, final EditText emailBox, final EditText password) {
         return new View.OnClickListener() {
 
             public void onClick(final View currentView) {
                 String emailText = emailBox.getText().toString();
                 String passwordText = password.getText().toString();
+
                 if (!sqlConnection.connectionEstablished()) {
                     Snackbar snackbar = Snackbar.make(currentView, "WiFi / data on?", Snackbar.LENGTH_INDEFINITE)
                             .setAction("Let me know!", new View.OnClickListener() {
@@ -125,8 +145,13 @@ public class MainActivity extends AppCompatActivity {
                     if (isValidEmailAddress(emailText)) {
                         if (isValidPasscode(passwordText.toCharArray())) {
                             LoginAttempt attempt = new LoginAttempt(mainActivity, getSqlConnection(), System.currentTimeMillis(), emailText, passwordText);
+                            addLoginAttempt(attempt);
+
                             if (attempt.wasSuccessful()) {
-                                doPostLogin(currentView, emailText, passwordText);
+                                doPostLogin(view, emailText);
+                                System.out.println("success");
+
+                                //user logs in, if they stored their stuff already
                             } else {
                                 showToast("Login unsuccessful! " + attempt.getUnsuccessfulReason(), "short");
                             }
@@ -141,9 +166,23 @@ public class MainActivity extends AppCompatActivity {
         };
     }
 
-    private void doPostLogin(View currentView, String email, String sixDigitPass) {
-        if (sqlConnection.connectionEstablished()) { //To be safe
+    private boolean hasEnteredLessonsBefore() {
+        File lessonFile = new File(getFilesDir(), LESSON_NAME_FILE_NAME);
+        return lessonFile.exists();
+    }
 
+    private void doPostLogin(View currentView, String email) {
+
+        if (sqlConnection.connectionEstablished()) { //To be safe
+            boolean updating = addLessonInfoButton.isChecked();
+            if (hasEnteredLessonsBefore() && updating) {
+                Intent msgToLessonSelectActivity = new Intent(context, LessonSelectActivity.class);
+                msgToLessonSelectActivity.putExtra("isUpdating", updating);
+                msgToLessonSelectActivity.putExtra("email", email);
+                startActivity(msgToLessonSelectActivity);
+            }
+        } else {
+            //TODO showTimeDisplay;
         }
     }
 
@@ -151,23 +190,20 @@ public class MainActivity extends AppCompatActivity {
         SqlQuery query = new SqlQuery(sqlConnection);
         query.executeQuery("SELECT password FROM {table} WHERE userEmail = '" + email + "'",
                 SqlConnection.SqlTableName.TIMETABLE_USERDATA);
-        ResultSet set = query.getResultSet();
-        try {
-            if (!set.next()) return "invalid email";
-            return set.getString(1);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return null;
+        return getResult(query);
     }
 
     public String getDatabaseSalt(String email) {
         SqlQuery query = new SqlQuery(sqlConnection);
         query.executeQuery("SELECT salt FROM {table} WHERE userEmail = '" + email + "'",
                 SqlConnection.SqlTableName.TIMETABLE_USERDATA);
+        return getResult(query);
+    }
+
+    private String getResult(SqlQuery query) {
         ResultSet set = query.getResultSet();
         try {
-            if (!set.next()) return "invalid email";
+            if (!set.next()) return "invalid";
             return set.getString(1);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -199,7 +235,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             if (!sqlConnection.connectionEstablished()) {
                 showToast(getString(R.string.internetNoDatabaseCon), "long");
-            } else{
+            } else {
                 showToast(getString(R.string.internetAndDatabaseConnected), "long");
             }
         }
@@ -209,10 +245,9 @@ public class MainActivity extends AppCompatActivity {
         view.setAlpha(f);
     }
 
-    public Toast showToast(Context c, String text, String length, boolean show) {
+    public void showToast(Context c, String text, String length, boolean show) {
         Toast toast = Toast.makeText(c, text, length == "short" ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG);
         if (show) toast.show();
-        return toast;
     }
 
     public void showToast(String text, String length) {
@@ -267,8 +302,8 @@ public class MainActivity extends AppCompatActivity {
         return outAnimation;
     }
 
-    private Spanned html(String string) {
-        return Html.fromHtml(string);
+    private void addLoginAttempt(LoginAttempt attempt) {
+        this.loginAttempts.add(attempt);
     }
 
     public boolean hasInternet() {
@@ -288,6 +323,29 @@ public class MainActivity extends AppCompatActivity {
         return hasInternet;
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        for (int i = 0; i < 100; i++) {
+            System.out.println("ON PAUSE");
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        for (int i = 0; i < 100; i++) {
+            System.out.println("ON RESUME");
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        for (int i = 0; i < 100; i++) {
+            System.out.println("ON STOP");
+        }
+    }
 
     public SqlConnection getSqlConnection() {
         if (this.sqlConnection == null || !this.sqlConnection.connectionEstablished()) {
