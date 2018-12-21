@@ -1,4 +1,4 @@
-package me.nathan3882.testingapp;
+package me.nathan3882.androidttrainparse;
 
 import java.util.Timer;
 import java.util.TimerTask;

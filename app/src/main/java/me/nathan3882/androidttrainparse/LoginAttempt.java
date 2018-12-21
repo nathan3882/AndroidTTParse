@@ -1,5 +1,6 @@
-package me.nathan3882.testingapp;
+package me.nathan3882.androidttrainparse;
 
+import me.nathan3882.activities.MainActivity;
 import me.nathan3882.data.Encryption;
 import me.nathan3882.data.SqlConnection;
 
@@ -22,7 +23,7 @@ public class LoginAttempt {
             String gottenDBSalt = mainActivity.getDatabaseSalt(emailText);
             String gottenDBBytes = mainActivity.getDatabaseStoredPwBytes(emailText);
 
-            if (gottenDBBytes.equals("invalid email")) { //= 'invalid email' when record doesnt exists
+            if (gottenDBBytes.equals("invalid")) { //= 'invalid email' when record doesnt exists
                 setSuccessful(false, true, "This email is incorrect!");
                 return;
             }
