@@ -1,7 +1,5 @@
 package me.nathan3882.data;
 
-import me.nathan3882.testingapp.MainActivity;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -10,10 +8,8 @@ import java.sql.Statement;
 public class SqlUpdate {
 
     private final Connection connection;
-    private final MainActivity main;
 
     public SqlUpdate(SqlConnection sqlConnection) {
-        this.main = sqlConnection.getMainActivity();
         this.connection = sqlConnection.getConnection();
     }
 
@@ -24,21 +20,19 @@ public class SqlUpdate {
      * @return success or not
      */
     public boolean executeUpdate(String sql, String name) {
-        if (main.hasInternet() && main.getSqlConnection().connectionEstablished()) {
-            PreparedStatement preparedStatement;
-            try {
-                connection.setAutoCommit(true);
-                preparedStatement = connection.prepareStatement(
-                        sql.replace("{table}", name),
-                        Statement.RETURN_GENERATED_KEYS);
+        PreparedStatement preparedStatement;
+        try {
+            connection.setAutoCommit(true);
+            preparedStatement = connection.prepareStatement(
+                    sql.replace("{table}", name),
+                    Statement.RETURN_GENERATED_KEYS);
 
-                preparedStatement.executeUpdate();
-                close(preparedStatement);
-            } catch (SQLException e) {
-                e.printStackTrace();
-                return false;
-            }
-        } else return false;
+            preparedStatement.executeUpdate();
+            close(preparedStatement);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
         return true;
     }
 
