@@ -1,7 +1,6 @@
 package me.nathan3882.data;
 
-import me.nathan3882.testingapp.MainActivity;
-import me.nathan3882.testingapp.TaskManager;
+import me.nathan3882.androidttrainparse.TaskManager;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -11,38 +10,33 @@ import java.util.concurrent.TimeUnit;
 
 public class SqlConnection {
 
-    private MainActivity main;
-    private boolean open;
-
     private static long latestOpeningMilis;
     private TaskManager closeConnectionTask;
-
-    public interface SqlTableName {
-        String TIMETABLE_RENEWAL = "timetablerenewal";
-        String TIMETABLE_LESSONS = "timetablelessons";
-        String TIMETABLE_USERDATA = "timetableuserdata";
-    }
-
-    private String host = "localhost";
-    private String databaseName = "userdata";
-    private int port = 3306;
+    private String host = "51.77.194.49";
+    private String databaseName = "ttrainparseUserdata";
+    private int port = 3307;
     private String username = "root";
-    private String password = "";
-
+    private String password = "invalid pw";
     private Connection connection;
 
-    public SqlConnection(MainActivity main) {
-        this.main = main;
-        this.connection = newCon();
+    public SqlConnection(boolean open) {
+        if (open) openConnection();
     }
 
-    public SqlConnection(MainActivity main, String host, int port, String databaseName, String username, String password) {
-        this.main = main;
+    public SqlConnection(String host, int port, String databaseName, String username, String password) {
         this.host = host;
         this.databaseName = databaseName;
         this.port = port;
         this.username = username;
         this.password = password;
+    }
+
+    public static long getLatestOpeningMilis() {
+        return latestOpeningMilis;
+    }
+
+    public static void setLatestOpeningMilis(long latestOpeningMilis) {
+        SqlConnection.latestOpeningMilis = latestOpeningMilis;
     }
 
     /**
@@ -72,10 +66,8 @@ public class SqlConnection {
             }
             try {
                 latestOpeningMilis = System.currentTimeMillis();
-                if (open) return;
                 Class.forName("com.mysql.jdbc.Driver");
                 this.connection = newCon();
-                open = true;
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -84,18 +76,22 @@ public class SqlConnection {
 
     private Connection newCon() {
         try {
-            return DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + databaseName + "?allowMultiQueries=true", username, password);
+            // The newInstance() call is a work around for some
+            // broken Java implementations
+            Class.forName("com.mysql.jdbc.Driver").newInstance();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        try {
+            return DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + databaseName + "?useSSL=false&allowMultiQueries=true", username, password);
         } catch (Exception e) {
-            System.out.println("Could not connect to SQL Database, are the details correct?");
+            e.printStackTrace();
             return null;
         }
     }
 
     public void closeConnection() {
-        if (open) {
-            close(connection);
-            open = false;
-        }
+        close(connection);
     }
 
     public boolean connectionEstablished() {
@@ -117,15 +113,6 @@ public class SqlConnection {
         }
     }
 
-
-    public static void setLatestOpeningMilis(long latestOpeningMilis) {
-        SqlConnection.latestOpeningMilis = latestOpeningMilis;
-    }
-
-    public MainActivity getMainActivity() {
-        return this.main;
-    }
-
     public boolean isClosed() {
         try {
             return this.connection.isClosed();
@@ -139,7 +126,9 @@ public class SqlConnection {
         return !isClosed();
     }
 
-    public static long getLatestOpeningMilis() {
-        return latestOpeningMilis;
+    public interface SqlTableName {
+        String TIMETABLE_RENEWAL = "timetablerenewal";
+        String TIMETABLE_LESSONS = "timetablelessons";
+        String TIMETABLE_USERDATA = "timetableuserdata";
     }
 }
