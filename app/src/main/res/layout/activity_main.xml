@@ -5,7 +5,7 @@
         xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".MainActivity" android:id="@+id/coordinatorLayout" tools:layout_editor_absoluteY="25dp">
+        tools:activity="me.nathan3882.activities.MainActivity" android:id="@+id/coordinatorLayout" tools:layout_editor_absoluteY="25dp">
 
     <include layout="@layout/content_main" android:id="@+id/include"
              android:layout_height="0dp"
@@ -72,7 +72,16 @@
             android:layout_marginEnd="8dp" app:layout_constraintStart_toStartOf="parent"
             android:layout_marginStart="8dp" android:layout_marginBottom="8dp"
             app:layout_constraintBottom_toTopOf="@+id/include" app:layout_constraintVertical_bias="0.657"
-            android:visibility="visible" style="@style/Widget.AppCompat.Button.Borderless.Colored"/><![CDATA[
+            android:visibility="visible" style="@style/Widget.AppCompat.Button.Borderless.Colored"/>
+    <Switch
+            android:text="Configure more lessons?"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="invisible"
+            android:id="@+id/addLessonInfoButton" android:layout_marginBottom="8dp"
+            app:layout_constraintBottom_toTopOf="@+id/loginButton" tools:visibility="invisible"
+            app:layout_constraintStart_toStartOf="parent" android:layout_marginStart="8dp"
+            app:layout_constraintEnd_toEndOf="parent" android:layout_marginEnd="8dp"/><![CDATA[
     />
 
     />

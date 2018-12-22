@@ -8,4 +8,11 @@
     <string name="internetAndDatabaseConnected">Internet and a database connection has been established</string>
     <string name="sixDigitPwHelper">Enter 6 digit passcode below!</string>
     <string name="loginText">Click to login!</string>
+    <string name="title_activity_lesson_select">LessonSelectActivity</string>
+    <string name="lessonNameHelp">Enter your lessons here for example Computer Science, Biology</string>
+    <string name="advance">Advance</string>
+    <string name="dayTitle">Lessons for {day}:</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
