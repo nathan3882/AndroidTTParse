@@ -13,7 +13,7 @@ import java.util.*;
 public class LessonInfo {
 
     private final DayOfWeek dayOfWeek;
-    private final String[] lessonNames;
+    private final ArrayList<String> lessonNames;
     private int lessonCount;
 
     private LinkedList<String> orderedLessons = new LinkedList<>();
@@ -23,7 +23,7 @@ public class LessonInfo {
     private String firstLesson;
     private boolean parsedSuccessfully = true;
 
-    public LessonInfo(String[] lessonNames, List<String> words, DayOfWeek dayOfWeek) {
+    public LessonInfo(ArrayList<String> lessonNames, List<String> words, DayOfWeek dayOfWeek) {
         this.lessonNames = lessonNames;
         this.dayOfWeek = dayOfWeek;
         Map<String, List<String>> subjectAndBounds = getBoundsForSubjects(words);
@@ -115,7 +115,6 @@ public class LessonInfo {
                             bounds.add(boundString);
                         }
                         subjectAndBounds.put(aLesson, bounds);
-
                     }
                 } else if (aLesson.equals(currentWord)) {
                     String boundString = String.valueOf(i + ", " + i);
