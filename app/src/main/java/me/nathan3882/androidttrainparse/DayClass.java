@@ -42,12 +42,6 @@ public class DayClass {
         return dayFragment;
     }
 
-    public DayFragment newInstance(String pageTitle, List<LessonInfo> lessonInfo, boolean b) {
-        DayFragment newInst = newInstance(pageTitle, lessonInfo);
-        if (b) DayEquivalent.addToPrevious(getDayOfWeek(), newInst);
-        return newInst;
-    }
-
     public DayOfWeek getDayOfWeek() {
         return dayOfWeek;
     }

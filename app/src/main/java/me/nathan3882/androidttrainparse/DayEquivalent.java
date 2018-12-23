@@ -22,7 +22,7 @@ public class DayEquivalent {
         this.dayInt = dayInt;
         this.dayOfWeek = DayOfWeek.of(dayInt);
         this.timeDisplayActivity = timeDisplayActivity;
-        setDayClass(getEquivalent());
+        this.dayClass = new DayClass(timeDisplayActivity, getEquivalent());
     }
 
     public static Map<DayOfWeek, DayClass.DayFragment> getPreviouslyStoredEquivalents() {
@@ -39,11 +39,6 @@ public class DayEquivalent {
 
     public static DayOfWeek getDay(int dayInt) {
         return DayOfWeek.of(dayInt);
-    }
-
-
-    private void setDayClass(DayOfWeek dayOfWeek) {
-        this.dayClass = new DayClass(timeDisplayActivity, dayOfWeek);
     }
 
     public DayClass getDayClass() {
