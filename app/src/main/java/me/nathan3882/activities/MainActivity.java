@@ -22,10 +22,8 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.time.DayOfWeek;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -80,7 +78,6 @@ public class MainActivity extends AppCompatActivity {
 
         initViews(initViews);
 
-
         if (hasEnteredLessonsBefore()) {
             addLessonInfoButton.setVisibility(View.VISIBLE);
         }
@@ -117,6 +114,17 @@ public class MainActivity extends AppCompatActivity {
             }
         };
         new Timer().scheduleAtFixedRate(task, 1000L, 1000L);
+    }
+
+    private String[] getAllDaysAsString() {
+        String[] allDaysAsString = new String[5];
+        DayOfWeek[] allDaysAsDay = DayOfWeek.values();
+        for (int i = 0; i < allDaysAsDay.length; i++) {
+            DayOfWeek aDay = allDaysAsDay[i];
+            if (aDay == DayOfWeek.SATURDAY || aDay == DayOfWeek.SUNDAY) continue;
+            allDaysAsString[i] = aDay.name();
+        }
+        return allDaysAsString;
     }
 
     private void initViews(View[] views) {
@@ -177,8 +185,15 @@ public class MainActivity extends AppCompatActivity {
             boolean updating = addLessonInfoButton.isChecked();
             if (hasEnteredLessonsBefore() && updating) {
                 Intent msgToLessonSelectActivity = new Intent(context, LessonSelectActivity.class);
-                msgToLessonSelectActivity.putExtra("isUpdating", updating);
-                msgToLessonSelectActivity.putExtra("email", email);
+                Bundle bund = new Bundle();
+                bund.putBoolean("isUpdating", updating);
+                bund.putString("email", email);
+                ArrayList<String> alreadySelectedLessons = new ArrayList<>();
+                /**
+                 * TODO continue this
+                 */
+                bund.putStringArrayList("lessons", alreadySelectedLessons);
+                msgToLessonSelectActivity.putExtras(bund);
                 startActivity(msgToLessonSelectActivity);
             }
         } else {
