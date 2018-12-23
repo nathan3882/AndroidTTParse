@@ -33,7 +33,7 @@ public class Util {
         return string.substring(0, 1).toUpperCase() + string.substring(1).toLowerCase();
     }
 
-    private static int getArrayLength(String[] array) {
+    public static int getArrayLength(String[] array) {
         int length = 0;
         for (String s : array) {
             if (s != null) {
