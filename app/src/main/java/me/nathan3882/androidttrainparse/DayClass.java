@@ -13,6 +13,9 @@ import me.nathan3882.activities.TimeDisplayActivity;
 import me.nathan3882.testingapp.R;
 
 import java.time.DayOfWeek;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 public class DayClass {
@@ -27,19 +30,20 @@ public class DayClass {
         this.activity = activity;
     }
 
-    public DayFragment newInstance(String headerNoHtml) {
+    public DayFragment newInstance(String headerNoHtml, List<LessonInfo> lessonInfo) {
         DayFragment dayFragment = new DayFragment();
-        dayFragment.synchroniseLessonInfo(getActivity());
+        dayFragment.synchroniseLessonInfo(lessonInfo);
+
         Bundle bundle = new Bundle();
         bundle.putInt("dayOfWeekToShow", dayOfWeek.getValue());
+        bundle.putString("headerNoHtml", headerNoHtml);
+        bundle.putStringArrayList("lessons", activity.getLessonNames());
         dayFragment.setArguments(bundle);
-        TextView dayFragHeader = getActivity().findViewById(R.id.dayFragHeader);
-        dayFragHeader.setText(Util.html("<html>" + headerNoHtml + "</html>"));
         return dayFragment;
     }
 
-    public DayFragment newInstance(String pageTitle, boolean b) {
-        DayFragment newInst = newInstance(pageTitle);
+    public DayFragment newInstance(String pageTitle, List<LessonInfo> lessonInfo, boolean b) {
+        DayFragment newInst = newInstance(pageTitle, lessonInfo);
         if (b) DayEquivalent.addToPrevious(getDayOfWeek(), newInst);
         return newInst;
     }
@@ -71,18 +75,29 @@ public class DayClass {
 
         private OnFragmentInteractionListener mListener;
         private DayOfWeek dayOfWeek;
-        private List<LessonInfo> thisDayLessonInfo;
+        private List<LessonInfo> lessonInfo;
+        private ArrayList<String> lessonsBeingTaught;
+        private String header;
 
         public DayFragment() {
-            // Required empty public constructor
+        }
+
+        public ArrayList<String> getLessonsBeingTaught() {
+            return lessonsBeingTaught;
+        }
+
+        public String getHeader() {
+            return header;
         }
 
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
-            if (getArguments() != null) {
-                dayOfWeek = DayOfWeek.of(getArguments().getInt("dayOfWeekToShow"));
-
+            Bundle args = getArguments();
+            if (args != null) {
+                this.dayOfWeek = DayOfWeek.of(getArguments().getInt("dayOfWeekToShow"));
+                this.header = args.getString("headerNoHtml");
+                this.lessonsBeingTaught = args.getStringArrayList("lessons");
             }
         }
 
@@ -90,15 +105,28 @@ public class DayClass {
             return this.dayOfWeek;
         }
 
-        public void synchroniseLessonInfo(TimeDisplayActivity inst) {
-            this.thisDayLessonInfo = inst.getLessonInfo().get(dayOfWeek);
+        public void synchroniseLessonInfo(List<LessonInfo> lessonInfo) {
+            this.lessonInfo = lessonInfo;
+        }
+
+        public List<LessonInfo> getLessonInfo() {
+            return lessonInfo;
         }
 
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
-            // Inflate the layout for this fragment
-            return inflater.inflate(R.layout.fragment_day, container, false);
+            View view = inflater.inflate(R.layout.fragment_day, container, false);
+
+            TextView dayFragHeader = view.findViewById(R.id.dayFragHeader);
+            dayFragHeader.setText(Util.html("<html>" + getHeader() + "</html>"));
+
+            StringBuilder toDisplay = getStringToDisplay(getLessonInfo());
+
+            TextView actualDisplay = view.findViewById(R.id.lessonDisplay);
+            actualDisplay.setText(Util.html(toDisplay.toString()));
+
+            return view;
         }
 
         // TODO: Rename method, update argument and hook method into UI event
@@ -125,19 +153,42 @@ public class DayClass {
             mListener = null;
         }
 
-        /**
-         * This interface must be implemented by activities that contain this
-         * fragment to allow an interaction in this fragment to be communicated
-         * to the activity and potentially other fragments contained in that
-         * activity.
-         * <p>
-         * See the Android Training lesson <a href=
-         * "http://developer.android.com/training/basics/fragments/communicating.html"
-         * >Communicating with Other Fragments</a> for more information.
-         */
+        private StringBuilder getStringToDisplay(List<LessonInfo> infoForOneDay) {
+            StringBuilder mainString = new StringBuilder();
+            mainString.append("<html><center>");
+            for (int i = 0; i < infoForOneDay.size(); i++) {
+                LessonInfo lessonDifTimes = infoForOneDay.get(i);
+                if (i != 0) mainString.append("<br>");
+                LinkedList<String> les = lessonDifTimes.getLessons();
+                for (String lessonName : les) {
+                    List<LocalTime> startTimes = lessonDifTimes.getStartTimes(lessonName);
+                    List<LocalTime> finishTimes = lessonDifTimes.getFinishTimes(lessonName);
+                    for (int k = 0; k < startTimes.size(); k++) {
+                        LocalTime startTime = startTimes.get(k);
+                        LocalTime finishTime = finishTimes.get(k);
+
+                        String startString = getPrettyMinute(startTime.getMinute());
+                        String endString = getPrettyMinute(finishTime.getMinute());
+
+                        mainString.append(lessonName).append(" lesson number ").append(k + 1).append(":<br>Starts at ").append(startTime.getHour()).append(":").append(startString).append(" and Ends at:<br>").append(finishTime.getHour()).append(" ").append(endString).append("<br>");
+                        if (k != 0) mainString.append("<br>");
+
+                    }
+                }
+            }
+            mainString.append("</center></html>");
+            return mainString;
+        }
+
+        private String getPrettyMinute(int minute) {
+            String prettyMinute = String.valueOf(minute);
+            if (minute < 10) prettyMinute = "0" + prettyMinute;
+            return prettyMinute;
+        }
+
         public interface OnFragmentInteractionListener {
-            // TODO: Update argument type and name
             void onFragmentInteraction(Uri uri);
         }
+
     }
 }
