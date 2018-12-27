@@ -11,8 +11,7 @@ import android.view.animation.Animation;
 import android.widget.*;
 import me.nathan3882.androidttrainparse.LoginAttempt;
 import me.nathan3882.androidttrainparse.Util;
-import me.nathan3882.data.SqlConnection;
-import me.nathan3882.data.SqlQuery;
+import me.nathan3882.requests.UserdataRequest;
 import me.nathan3882.testingapp.R;
 
 import java.io.BufferedReader;
@@ -20,8 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.DayOfWeek;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -37,12 +34,12 @@ public class MainActivity extends AppCompatActivity {
     private static boolean doneSecondFadeIn = false;
     private static boolean first = true;
     private boolean hasInternet;
-    private SqlConnection sqlConnection = null;
     private MainActivity mainActivity;
 
     private LessonSelectActivity lessonSelectActivity;
     private List<LoginAttempt> loginAttempts;
     private Switch addLessonInfoButton;
+    private UserdataRequest userdataRequest;
 
     public static Context getRuntimeContext() {
         return context;
@@ -54,12 +51,12 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         loginAttempts = new LinkedList<>();
         context = getApplicationContext();
+
         this.lessonSelectActivity = new LessonSelectActivity();
 
         this.mainActivity = this;
-        this.sqlConnection = new SqlConnection(true);
         final TextView loginOrRegister = findViewById(R.id.loginOrRegisterText);
-        loginOrRegister.setText("Login below using previously made details!");
+        loginOrRegister.setText("Login below using your previously registered account!");
 
         this.addLessonInfoButton = findViewById(R.id.addLessonInfoButton);
 
@@ -84,6 +81,15 @@ public class MainActivity extends AppCompatActivity {
 
 
         showNetworkToasts();
+
+        /*Intent toTimeDisplay = new Intent(getBaseContext(), TimeDisplayActivity.class);
+        toTimeDisplay.putExtra("email", "nathan@gmail.com");
+        toTimeDisplay.putExtra("wasUpdating", false);
+        ArrayList<String> lessons = new ArrayList<String>(/*Temp until web service finished dev
+                Arrays.asList(new String[]{"Business studies", "Computer Science", "Biology"}));
+        toTimeDisplay.putExtra("lessons", lessons);
+        toTimeDisplay.putExtra("days", getAllDaysAsString());
+        startActivity(toTimeDisplay);*/
 
         loginButton.setOnClickListener(getLoginBtnClickListener(loginButton, emailEnter, numericPassword));
 
@@ -133,14 +139,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private View.OnClickListener getLoginBtnClickListener(View view, final EditText emailBox, final EditText password) {
+    private View.OnClickListener getLoginBtnClickListener(View view, final EditText emailBox,
+                                                          final EditText password) {
         return new View.OnClickListener() {
 
             public void onClick(final View currentView) {
                 String emailText = emailBox.getText().toString();
                 String passwordText = password.getText().toString();
 
-                if (!sqlConnection.connectionEstablished()) {
+                if (!hasInternet()) {
                     Snackbar snackbar = Snackbar.make(currentView, "WiFi / data on?", Snackbar.LENGTH_INDEFINITE)
                             .setAction("Let me know!", new View.OnClickListener() {
                                 @Override
@@ -152,16 +159,25 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     if (isValidEmailAddress(emailText)) {
                         if (isValidPasscode(passwordText.toCharArray())) {
-                            LoginAttempt attempt = new LoginAttempt(mainActivity, getSqlConnection(), System.currentTimeMillis(), emailText, passwordText);
-                            addLoginAttempt(attempt);
-
-                            if (attempt.wasSuccessful()) {
-                                doPostLogin(view, emailText);
-                                System.out.println("success");
-
-                                //user logs in, if they stored their stuff already
-                            } else {
-                                showToast("Login unsuccessful! " + attempt.getUnsuccessfulReason(), "short");
+                            LoginAttempt attempt = null;
+                            try {
+                                attempt = new LoginAttempt(mainActivity, view, System.currentTimeMillis(), emailText, passwordText);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            if (attempt == null) {
+                                mainActivity.showToast("Thread interupted", "long");
+                                return;
+                            }
+                            while (true) {
+                                if (attempt.isDone()) {
+                                    if (attempt.wasSuccessful()) {
+                                        mainActivity.doPostLogin(view, getUserdataRequest());//user logs in, if they stored their stuff already
+                                    } else {
+                                        mainActivity.showToast("Invalid username/password", "long");
+                                    }
+                                    break;
+                                }
                             }
                         } else {
                             showToast("That's not a valid password!", "short");
@@ -171,7 +187,9 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             }
-        };
+        }
+
+                ;
     }
 
     private boolean hasEnteredLessonsBefore() {
@@ -179,15 +197,15 @@ public class MainActivity extends AppCompatActivity {
         return lessonFile.exists();
     }
 
-    private void doPostLogin(View currentView, String email) {
-
-        if (sqlConnection.connectionEstablished()) { //To be safe
+    public void doPostLogin(View currentView, UserdataRequest request) {
+        if (hasInternet()) { //To be safe
             boolean updating = addLessonInfoButton.isChecked();
             if (hasEnteredLessonsBefore() && updating) {
                 Intent msgToLessonSelectActivity = new Intent(context, LessonSelectActivity.class);
                 Bundle bund = new Bundle();
                 bund.putBoolean("isUpdating", updating);
-                bund.putString("email", email);
+                bund.putString("email", request.getUserEmail());
+                bund.putString("homeCrs", request.getHomeCrs());
                 ArrayList<String> alreadySelectedLessons = new ArrayList<>();
                 /**
                  * TODO continue this
@@ -195,35 +213,11 @@ public class MainActivity extends AppCompatActivity {
                 bund.putStringArrayList("lessons", alreadySelectedLessons);
                 msgToLessonSelectActivity.putExtras(bund);
                 startActivity(msgToLessonSelectActivity);
+            } else {
+                //TODO showTimeDisplay;
             }
-        } else {
-            //TODO showTimeDisplay;
+            mainActivity.showToast("Welcome to the app!", "long");
         }
-    }
-
-    public String getDatabaseStoredPwBytes(String email) {
-        SqlQuery query = new SqlQuery(sqlConnection);
-        query.executeQuery("SELECT password FROM {table} WHERE userEmail = '" + email + "'",
-                SqlConnection.SqlTableName.TIMETABLE_USERDATA);
-        return getResult(query);
-    }
-
-    public String getDatabaseSalt(String email) {
-        SqlQuery query = new SqlQuery(sqlConnection);
-        query.executeQuery("SELECT salt FROM {table} WHERE userEmail = '" + email + "'",
-                SqlConnection.SqlTableName.TIMETABLE_USERDATA);
-        return getResult(query);
-    }
-
-    private String getResult(SqlQuery query) {
-        ResultSet set = query.getResultSet();
-        try {
-            if (!set.next()) return "invalid";
-            return set.getString(1);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return null;
     }
 
     private boolean isValidPasscode(char[] password) {
@@ -248,7 +242,7 @@ public class MainActivity extends AppCompatActivity {
         if (!hasInternet()) {
             showToast(getString(R.string.internetRequired), "long");
         } else {
-            if (!sqlConnection.connectionEstablished()) {
+            if (!hasInternet()) {
                 showToast(getString(R.string.internetNoDatabaseCon), "long");
             } else {
                 showToast(getString(R.string.internetAndDatabaseConnected), "long");
@@ -362,14 +356,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public SqlConnection getSqlConnection() {
-        if (this.sqlConnection == null || !this.sqlConnection.connectionEstablished()) {
-            if (this.sqlConnection.connectionEstablished()) {
-                return this.sqlConnection;
-            } else {
-                return null;
-            }
-        }
-        return this.sqlConnection;
+    public void setUserdata(UserdataRequest userdataRequest) {
+        this.userdataRequest = userdataRequest;
+    }
+
+    public UserdataRequest getUserdataRequest() {
+        return userdataRequest;
     }
 }

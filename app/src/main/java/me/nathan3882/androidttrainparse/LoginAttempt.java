@@ -1,56 +1,100 @@
 package me.nathan3882.androidttrainparse;
 
+import android.view.View;
 import me.nathan3882.activities.MainActivity;
 import me.nathan3882.data.Encryption;
-import me.nathan3882.data.SqlConnection;
+import me.nathan3882.requests.UserdataRequest;
 
 public class LoginAttempt {
 
-    private final SqlConnection connection;
     private String emailText;
     private boolean wasSuccessful;
     private String unsuccessfulReason;
     private MainActivity mainActivity;
+    private String gottenDBSalt = "";
+    private String gottenDBBytes = "";
+    private boolean done = false;
+    private UserdataRequest userdataRequest; //To allow network webservice access
 
-    public LoginAttempt(MainActivity mainActivity, SqlConnection connection, long currentTimeMillis, String emailText, String localEnteredPassword) {
+    public LoginAttempt(MainActivity mainActivity, View view, long currentTimeMillis, String emailText, String localEnteredPassword) throws InterruptedException {
         this.mainActivity = mainActivity;
-        this.connection = connection;
         this.emailText = emailText;
-
-        if (!connection.connectionEstablished()) {
-            setSuccessful(false, true, "Database connection not established");
-        } else {
-            String gottenDBSalt = mainActivity.getDatabaseSalt(emailText);
-            String gottenDBBytes = mainActivity.getDatabaseStoredPwBytes(emailText);
-
-            if (gottenDBBytes.equals("invalid")) { //= 'invalid email' when record doesnt exists
-                setSuccessful(false, true, "This email is incorrect!");
-                return;
+        Thread db = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Client client = new Client("http://192.168.0.52:3000/ttrainparse/");
+                Request request = client.generateRequest("getUserInfo", emailText);
+                Response response = request.getResponse();
+                Object jsonResult = response.getJsonResult();
+                UserdataRequest userdataRequest = null;
+                if (jsonResult == null) {
+                    setSuccessful(false);
+                    return;
+                }
+                if (jsonResult instanceof UserdataRequest) {
+                    userdataRequest = (UserdataRequest) jsonResult;
+                    gottenDBBytes = userdataRequest.getPassword();
+                    gottenDBSalt = userdataRequest.getSalt();
+                } else {
+                    setSuccessful(false);
+                    return;
+                }
+                mainActivity.setUserdata(userdataRequest);
+                if (!mainActivity.hasInternet()) {
+                    setSuccessful(false, "Database connection not established");
+                } else {
+                    System.out.println("EMAIL TEXT = " + emailText);
+                    if (gottenDBBytes.equals("") || gottenDBSalt.equals("")) { //= 'invalid email' when record doesnt exists
+                        setSuccessful(false);
+                        return;
+                    }
+                    boolean authenticated = Encryption.authenticate(localEnteredPassword, gottenDBBytes, gottenDBSalt);
+                    if (!authenticated) {
+                        setSuccessful(false);
+                    } else {
+                        setSuccessful(true);
+                    }
+                }
+                done = true;
             }
+        });
+        db.start();
 
-            boolean authenticated = Encryption.authenticate(localEnteredPassword, gottenDBBytes, gottenDBSalt);
-            if (!authenticated) {
-                String reason = "This password is incorrect!";
-                setSuccessful(false, true, reason);
-                return;
-            }else{
-                mainActivity.showToast("Welcome to the app - swipe to view other days!", "long");
+        /*Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if (!mainActivity.hasInternet()) {
+                    setSuccessful(false, "Database connection not established");
+                } else {
+                    System.out.println("EMAIL TEXT = " + emailText);
+                    if (gottenDBBytes.equals("") || gottenDBSalt.equals("")) { //= 'invalid email' when record doesnt exists
+                        setSuccessful(false);
+                        return;
+                    }
+                    boolean authenticated = Encryption.authenticate(localEnteredPassword, gottenDBBytes, gottenDBSalt);
+                    if (!authenticated) {
+                        setSuccessful(false);
+                    } else {
+                        setSuccessful(true);
+                    }
+                }
             }
-            setSuccessful(true);
-        }
+        });
+        while(true) {
+            if (!done) continue;
+            thread.start();
+            break;
+        }*/
     }
 
-    private void setSuccessful(boolean wasSuccessful, boolean toast, String unsuccessfulReason) {
+    private void setSuccessful(boolean wasSuccessful, String unsuccessfulReason) {
         this.wasSuccessful = wasSuccessful;
-        if (!wasSuccessful) {
-            if (toast) {
-                setUnsuccessfulReason(unsuccessfulReason);
-                mainActivity.showToast(getUnsuccessfulReason(), "short");
-            }
-        }
+        setUnsuccessfulReason(unsuccessfulReason);
     }
+
 
     private void setSuccessful(boolean wasSuccessful) {
+        this.done = true;
         this.wasSuccessful = wasSuccessful;
     }
 
@@ -66,11 +110,11 @@ public class LoginAttempt {
         this.unsuccessfulReason = unsuccessfulReason;
     }
 
-    public SqlConnection getConnection() {
-        return connection;
-    }
-
     public String getEmailText() {
         return emailText;
+    }
+
+    public boolean isDone() {
+        return done;
     }
 }

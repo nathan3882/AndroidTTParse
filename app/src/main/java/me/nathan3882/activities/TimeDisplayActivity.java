@@ -13,7 +13,6 @@ import me.nathan3882.androidttrainparse.DayClass;
 import me.nathan3882.androidttrainparse.DayEquivalent;
 import me.nathan3882.androidttrainparse.LessonInfo;
 import me.nathan3882.androidttrainparse.Util;
-import me.nathan3882.data.SqlConnection;
 import me.nathan3882.testingapp.R;
 
 import java.time.DayOfWeek;
@@ -72,18 +71,10 @@ public class TimeDisplayActivity extends AppCompatActivity implements DayClass.D
 
     private List<LessonInfo> defineLessonInformation(DayOfWeek day) {
         List<LessonInfo> info = new LinkedList<>();
-        SqlConnection con = new SqlConnection(true);
 
         String dayName = day.name();
 
-//        SqlQuery query = new SqlQuery(con);
-//        query.executeQuery("SELECT " + dayName + " FROM {table} WHERE userEmail = '" + getEmail() + "'",
-//                SqlConnection.SqlTableName.TIMETABLE_LESSONS);
-//
-//        String depletedOcrText = "";
-//        if (query.next(false)) {
-//            depletedOcrText = query.getString(dayName);
-//        }
+
         String depletedOcrText = "Wednesday Business studies 14:10 - 15:15 Business studies 15:15 - 16:20";
         List<String> words = new LinkedList<>(Arrays.asList(depletedOcrText.split(" ")));
         info.add(new LessonInfo(getLessonNames(), words, day));
