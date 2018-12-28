@@ -42,4 +42,19 @@ public class Util {
         }
         return length;
     }
+
+    public static void notifyThread(Object thread) {
+        synchronized (thread) {
+            thread.notify();
+        }
+    }
+    public static void waitThread(Object thread) {
+        synchronized (thread) {
+            try {
+                thread.wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }

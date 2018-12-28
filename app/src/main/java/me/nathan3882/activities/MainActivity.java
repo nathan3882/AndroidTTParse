@@ -20,7 +20,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.time.DayOfWeek;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,9 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private MainActivity mainActivity;
 
     private LessonSelectActivity lessonSelectActivity;
-    private List<LoginAttempt> loginAttempts;
     private Switch addLessonInfoButton;
-    private UserdataRequest userdataRequest;
 
     public static Context getRuntimeContext() {
         return context;
@@ -49,7 +49,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        loginAttempts = new LinkedList<>();
         context = getApplicationContext();
 
         this.lessonSelectActivity = new LessonSelectActivity();
@@ -159,25 +158,16 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     if (isValidEmailAddress(emailText)) {
                         if (isValidPasscode(passwordText.toCharArray())) {
-                            LoginAttempt attempt = null;
-                            try {
-                                attempt = new LoginAttempt(mainActivity, view, System.currentTimeMillis(), emailText, passwordText);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                            if (attempt == null) {
-                                mainActivity.showToast("Thread interupted", "long");
-                                return;
-                            }
-                            while (true) {
-                                if (attempt.isDone()) {
-                                    if (attempt.wasSuccessful()) {
-                                        mainActivity.doPostLogin(view, getUserdataRequest());//user logs in, if they stored their stuff already
-                                    } else {
-                                        mainActivity.showToast("Invalid username/password", "long");
-                                    }
-                                    break;
-                                }
+                            LoginAttempt attempt = new LoginAttempt(mainActivity, view, System.currentTimeMillis(), emailText, passwordText);
+                            attempt.start();
+
+                            Util.waitThread(mainActivity);
+
+                            UserdataRequest userdataRequest = attempt.getUserdataRequest();
+                            if (attempt.wasSuccessful()) {
+                                mainActivity.doPostLogin(view, userdataRequest);//user logs in, if they stored their stuff already
+                            } else {
+                                mainActivity.showToast("Invalid username/password", "long");
                             }
                         } else {
                             showToast("That's not a valid password!", "short");
@@ -187,9 +177,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             }
-        }
-
-                ;
+        };
     }
 
     private boolean hasEnteredLessonsBefore() {
@@ -199,25 +187,44 @@ public class MainActivity extends AppCompatActivity {
 
     public void doPostLogin(View currentView, UserdataRequest request) {
         if (hasInternet()) { //To be safe
-            boolean updating = addLessonInfoButton.isChecked();
-            if (hasEnteredLessonsBefore() && updating) {
-                Intent msgToLessonSelectActivity = new Intent(context, LessonSelectActivity.class);
-                Bundle bund = new Bundle();
-                bund.putBoolean("isUpdating", updating);
-                bund.putString("email", request.getUserEmail());
-                bund.putString("homeCrs", request.getHomeCrs());
-                ArrayList<String> alreadySelectedLessons = new ArrayList<>();
-                /**
-                 * TODO continue this
-                 */
-                bund.putStringArrayList("lessons", alreadySelectedLessons);
-                msgToLessonSelectActivity.putExtras(bund);
-                startActivity(msgToLessonSelectActivity);
-            } else {
-                //TODO showTimeDisplay;
+            if (hasEnteredLessonsBefore()) {
+                boolean updating = addLessonInfoButton.isChecked();
+                if (updating) {
+                    startLessonSelect(currentView, true, request);
+                } else { //show time display
+
+                }
+            } else { //open lesson select
+                startLessonSelect(currentView, false, request);
             }
             mainActivity.showToast("Welcome to the app!", "long");
         }
+    }
+
+    public static void startTimeDisplayActivity(Context fromContext, String email, boolean isUpdating, ArrayList lessons) {
+        Intent toTimeDisplay = new Intent(fromContext, TimeDisplayActivity.class);
+        toTimeDisplay.putExtra("email", email);
+        toTimeDisplay.putExtra("wasUpdating", isUpdating);
+        toTimeDisplay.putExtra("lessons", lessons);
+        fromContext.startActivity(toTimeDisplay);
+    }
+
+    private void startLessonSelect(View currentView, boolean updating, UserdataRequest request) {
+        Intent msgToLessonSelectActivity = new Intent(context, LessonSelectActivity.class);
+        Bundle bund = new Bundle();
+        bund.putBoolean("isUpdating", updating);
+        bund.putString("email", request.getUserEmail());
+        bund.putString("homeCrs", request.getHomeCrs());
+        ArrayList<String> alreadySelectedLessons = new ArrayList<>();
+        if (updating) {
+
+        }
+        /**
+         * TODO continue this
+         */
+        bund.putStringArrayList("lessons", alreadySelectedLessons);
+        msgToLessonSelectActivity.putExtras(bund);
+        startActivity(msgToLessonSelectActivity);
     }
 
     private boolean isValidPasscode(char[] password) {
@@ -311,10 +318,6 @@ public class MainActivity extends AppCompatActivity {
         return outAnimation;
     }
 
-    private void addLoginAttempt(LoginAttempt attempt) {
-        this.loginAttempts.add(attempt);
-    }
-
     public boolean hasInternet() {
         new Thread(new Runnable() {
             @Override
@@ -354,13 +357,5 @@ public class MainActivity extends AppCompatActivity {
         for (int i = 0; i < 100; i++) {
             System.out.println("ON STOP");
         }
-    }
-
-    public void setUserdata(UserdataRequest userdataRequest) {
-        this.userdataRequest = userdataRequest;
-    }
-
-    public UserdataRequest getUserdataRequest() {
-        return userdataRequest;
     }
 }
