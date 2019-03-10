@@ -1,4 +1,4 @@
-package me.nathan3882.requestResponses;
+package me.nathan3882.responseData;
 
 import android.support.annotation.Nullable;
 import org.json.JSONObject;
@@ -7,7 +7,7 @@ public interface RequestResponseData {
 
     void updateSubclassValues();
 
-    public String getResponseString();
+    String getResponseString();
 
     @Nullable
     JSONObject getJsonObject();

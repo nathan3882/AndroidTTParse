@@ -1,4 +1,4 @@
-package me.nathan3882.requestResponses;
+package me.nathan3882.responseData;
 
 import android.support.annotation.Nullable;
 import org.json.JSONArray;

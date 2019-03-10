@@ -1,74 +1,49 @@
-package me.nathan3882.data;
+package me.nathan3882.requestsResponses;
 
+import android.app.Activity;
 import android.os.AsyncTask;
-import android.support.annotation.Nullable;
-import android.view.View;
-import android.widget.ProgressBar;
 import me.nathan3882.androidttrainparse.Client;
-import me.nathan3882.requestResponses.HasEnteredLessonsBeforeRequestResponseData;
-import me.nathan3882.requestResponses.LessonNameRequestResponseData;
-import me.nathan3882.requestResponses.UserdataRequestResponseData;
+import me.nathan3882.responseData.HasEnteredLessonsBeforeRequestResponseData;
+import me.nathan3882.responseData.LessonNameRequestResponseData;
+import me.nathan3882.responseData.UserdataRequestResponseData;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
 
-public class GetRequest extends AsyncTask<String, Integer, RequestResponse> {
-    private final Client client;
+public class GetRequest extends AsyncTask<String, Integer, RequestResponse> implements AsyncContextRef<Activity> {
+    private WeakReference<Activity> weakReference;
+    private Client client;
 
     private Type action;
 
     private List<String> parameters;
 
-    private int progress = 0;
     private RequestResponse requestResponse;
-    private ProgressBar bar = null;
     private RequestResponseCompletionEvent requestResponseCompletionEvent;
 
-    public GetRequest(Client client, String parameter, RequestResponseCompletionEvent requestResponseCompletionEvent) {
+    public GetRequest(WeakReference<Activity> weakReference, Client client, String parameter, RequestResponseCompletionEvent requestResponseCompletionEvent) {
         this.action = client.getAction();
         this.parameters = Collections.singletonList(parameter);
+        this.weakReference = weakReference;
         this.client = client;
         this.requestResponseCompletionEvent = requestResponseCompletionEvent;
-    }
-
-    public GetRequest supplementWithProgressBar(ProgressBar bar) {
-        this.bar = bar;
-        return this;
-    }
-
-    @Nullable
-    public ProgressBar getBar() {
-        return bar;
-    }
-
-    @Override
-    protected void onPreExecute() {
-
-    }
-
-    @Override
-    protected void onProgressUpdate(Integer... progress) {
-        this.progress = progress[0];
-        if (getBar() != null) getBar().setProgress(this.progress);
     }
 
     @Override
     protected void onPostExecute(RequestResponse requestResponse) {
         this.requestResponse = requestResponse;
-        System.out.println("RESSY = " + requestResponse);
         requestResponseCompletionEvent.onCompletion(requestResponse);
-
-        if (getBar() != null) getBar().setVisibility(View.INVISIBLE);
     }
 
     @Override
     public RequestResponse doInBackground(String... params) {
-        publishProgress(35);
+        publishProgress(20);
         String webService = client.getWebService() + parametersToRoute(getParameters(), false);
         RequestResponse requestResponse = null;
         try {
@@ -77,6 +52,7 @@ public class GetRequest extends AsyncTask<String, Integer, RequestResponse> {
 
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
+            publishProgress(40);
             conn.connect();
             //Set data few lines down
 
@@ -86,11 +62,11 @@ public class GetRequest extends AsyncTask<String, Integer, RequestResponse> {
 
             BufferedReader in = new BufferedReader(
                     new InputStreamReader(conn.getInputStream()));
+            publishProgress(60);
             StringBuilder builder = new StringBuilder();
 
             in.lines().forEach(builder::append);
 
-            publishProgress(70);
             switch (getAction()) {
                 case GET_USER_INFO:
                     requestResponse.setData(new UserdataRequestResponseData(builder.toString()));
@@ -98,20 +74,17 @@ public class GetRequest extends AsyncTask<String, Integer, RequestResponse> {
                 case GET_LESSON_NAMES:
                     requestResponse.setData(new LessonNameRequestResponseData(builder.toString()));
                     break;
-                case HAS_ENTERED_LESSONS_BEFORE:
+                case HAS_LESSON_NAMES:
                     requestResponse.setData(new HasEnteredLessonsBeforeRequestResponseData(builder.toString()));
                     break;
             }
+            publishProgress(80);
 
         } catch (IOException e) {
             e.printStackTrace();
         }
         publishProgress(100);
         return requestResponse;
-    }
-
-    public int getProgress() {
-        return progress;
     }
 
     public RequestResponse getRequestResponse() {
@@ -135,10 +108,15 @@ public class GetRequest extends AsyncTask<String, Integer, RequestResponse> {
         return parameters;
     }
 
+    @Override
+    public WeakReference<Activity> getWeakReference() {
+        return this.weakReference;
+    }
+
     public enum Type {
         GET_USER_INFO("getUserInfo"),
         GET_LESSON_NAMES("getLessonNames"),
-        HAS_ENTERED_LESSONS_BEFORE("hasEnteredLessonsBefore");
+        HAS_LESSON_NAMES("hasLessonNames");
 
         private final String webServiceAction;
 

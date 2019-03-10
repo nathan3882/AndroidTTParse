@@ -1,7 +1,7 @@
-package me.nathan3882.data;
+package me.nathan3882.requestsResponses;
 
 import android.support.annotation.Nullable;
-import me.nathan3882.requestResponses.RequestResponseData;
+import me.nathan3882.responseData.RequestResponseData;
 
 public class RequestResponse {
 

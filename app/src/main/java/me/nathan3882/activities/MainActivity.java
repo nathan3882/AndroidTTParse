@@ -1,7 +1,10 @@
 package me.nathan3882.activities;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -9,127 +12,112 @@ import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.*;
+import me.nathan3882.androidttrainparse.Client;
 import me.nathan3882.androidttrainparse.LoginAttempt;
+import me.nathan3882.androidttrainparse.User;
 import me.nathan3882.androidttrainparse.Util;
-import me.nathan3882.requests.UserdataRequest;
+import me.nathan3882.requestsResponses.AsyncContextRef;
+import me.nathan3882.requestsResponses.GetRequest;
+import me.nathan3882.requestsResponses.RequestResponse;
+import me.nathan3882.requestsResponses.RequestResponseCompletionEvent;
+import me.nathan3882.responseData.HasEnteredLessonsBeforeRequestResponseData;
+import me.nathan3882.responseData.LessonNameRequestResponseData;
+import me.nathan3882.responseData.RequestResponseData;
+import me.nathan3882.responseData.UserdataRequestResponseData;
 import me.nathan3882.testingapp.R;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.time.DayOfWeek;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements AsyncContextRef<Activity> {
 
-    public static final String LESSON_NAME_FILE_NAME = "Lesson Names.txt";
-    private static final long ONE_HALF_SECS = 1500L;
-    private static long latestEvent = System.currentTimeMillis();
-    private static Context context;
-    private static boolean doneFadeOut = false;
-    private static boolean doneSecondFadeIn = false;
-    private static boolean first = true;
-    private boolean hasInternet;
     private MainActivity mainActivity;
-
-    private LessonSelectActivity lessonSelectActivity;
+    private WeakReference<Activity> weakReference;
     private Switch addLessonInfoButton;
+    private ProgressBar mainActivityProgressBar;
+    private EditText emailEnter;
+    private TextView sixDigitPwHelper;
+    private EditText numericPassword;
+    private ImageView loginButtonView;
+    private TextView loginOrRegister;
 
-    public static Context getRuntimeContext() {
-        return context;
+    public static void startTimeDisplayActivity(Context currentContext, WeakReference<Activity> reference, User user) {
+        Client lessonNamesClient = new Client(Util.DEFAULT_TTRAINPARSE, GetRequest.Type.GET_LESSON_NAMES);
+
+        new GetRequest(reference, lessonNamesClient, "/" + user.getUserEmail() + Util.PARAMS, new RequestResponseCompletionEvent() {
+            @Override
+            public void onCompletion(RequestResponse requestResponse) {
+                RequestResponseData data = requestResponse.getData();
+                if (data instanceof LessonNameRequestResponseData) {
+                    LessonNameRequestResponseData lessonNameData =
+                            (LessonNameRequestResponseData) data;
+
+                    ArrayList<String> lessonNames = lessonNameData.getLessonNames();
+
+                    Intent toTimeDisplay = new Intent(currentContext, TimeDisplayActivity.class);
+                    toTimeDisplay.putExtra("email", user.getUserEmail());
+                    toTimeDisplay.putExtra("homeCrs", user.getHomeCrs());
+                    toTimeDisplay.putStringArrayListExtra("lessons", lessonNames);
+                    currentContext.startActivity(toTimeDisplay);
+                }
+            }
+        }).execute();
+    }
+
+    @Override
+    public WeakReference<Activity> getWeakReference() {
+        return this.weakReference;
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        context = getApplicationContext();
-
-        this.lessonSelectActivity = new LessonSelectActivity();
+        this.mainActivityProgressBar = findViewById(R.id.mainActivityProgressBar);
 
         this.mainActivity = this;
-        final TextView loginOrRegister = findViewById(R.id.loginOrRegisterText);
+        this.weakReference = new WeakReference<>(mainActivity);
+        this.loginOrRegister = findViewById(R.id.loginOrRegisterText);
+
         loginOrRegister.setText("Login below using your previously registered account!");
 
         this.addLessonInfoButton = findViewById(R.id.addLessonInfoButton);
 
-        final EditText emailEnter = findViewById(R.id.enterEmail);
+        this.emailEnter = findViewById(R.id.enterEmail);
 
-        final TextView sixDigitPwHelper = findViewById(R.id.sixDigitPwHelper);
+        this.sixDigitPwHelper = findViewById(R.id.sixDigitPwHelper);
 
-        final EditText numericPassword = findViewById(R.id.numericPassword);
+        this.numericPassword = findViewById(R.id.numericPassword);
 
-        final Button loginButton = findViewById(R.id.loginButton);
+        this.loginButtonView = findViewById(R.id.loginButton);
 
-        final TextView helloText = findViewById(R.id.helloText);
-        helloText.setText(Util.html("<html><center>Hello student..."));
-
-        View[] initViews = {loginOrRegister, emailEnter, sixDigitPwHelper, numericPassword, loginButton, addLessonInfoButton};
+        View[] initViews = {loginOrRegister, emailEnter, sixDigitPwHelper, numericPassword, addLessonInfoButton};
 
         initViews(initViews);
 
-        if (hasEnteredLessonsBefore()) {
-            addLessonInfoButton.setVisibility(View.VISIBLE);
-        }
-
-
         showNetworkToasts();
 
-        /*Intent toTimeDisplay = new Intent(getBaseContext(), TimeDisplayActivity.class);
-        toTimeDisplay.putExtra("email", "nathan@gmail.com");
-        toTimeDisplay.putExtra("wasUpdating", false);
-        ArrayList<String> lessons = new ArrayList<String>(/*Temp until web service finished dev
-                Arrays.asList(new String[]{"Business studies", "Computer Science", "Biology"}));
-        toTimeDisplay.putExtra("lessons", lessons);
-        toTimeDisplay.putExtra("days", getAllDaysAsString());
-        startActivity(toTimeDisplay);*/
+        fadeInAlpha(Util.ONE_HALF_SECS, true, emailEnter, addLessonInfoButton, sixDigitPwHelper, numericPassword, loginButtonView);
+        fadeInAlpha(Util.ONE_HALF_SECS, true, loginOrRegister);
 
-        loginButton.setOnClickListener(getLoginBtnClickListener(loginButton, emailEnter, numericPassword));
+        loginButtonView.setOnClickListener(getLoginBtnClickListener(emailEnter, numericPassword));
 
-        TimerTask task = new TimerTask() {
-            @Override
-            public void run() {
-                long current = System.currentTimeMillis();
-                final long dif = current - latestEvent;
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (dif >= 11000L) {
-                            fadeInAlpha(ONE_HALF_SECS, true, emailEnter, addLessonInfoButton, sixDigitPwHelper, numericPassword, loginButton);
-                            cancel();
-                        }
-                        if (dif >= 8000L && !doneSecondFadeIn) { //After fade out of welcome has finished
-                            fadeInAlpha(ONE_HALF_SECS, true, loginOrRegister);
-                            doneSecondFadeIn = true;
-                        } else if (dif >= 5000L && !doneFadeOut) {
-                            fadeOutAlpha(helloText, helloText.getAlpha(), ONE_HALF_SECS, true);
-                            doneFadeOut = true;
-                        } else if (first) {
-                            fadeInAlpha(ONE_HALF_SECS, true, helloText);
-                            first = false;
-                        }
-                    }
-                });
-            }
-        };
-        new Timer().scheduleAtFixedRate(task, 1000L, 1000L);
     }
 
-    private String[] getAllDaysAsString() {
-        String[] allDaysAsString = new String[5];
-        DayOfWeek[] allDaysAsDay = DayOfWeek.values();
-        for (int i = 0; i < allDaysAsDay.length; i++) {
-            DayOfWeek aDay = allDaysAsDay[i];
-            if (aDay == DayOfWeek.SATURDAY || aDay == DayOfWeek.SUNDAY) continue;
-            allDaysAsString[i] = aDay.name();
+    private void sendHasEnteredLessonsBeforeRequest(String userEmail, RequestResponseCompletionEvent callback) {
+        Client client = new Client(Util.DEFAULT_TTRAINPARSE, GetRequest.Type.HAS_LESSON_NAMES);
+        try {
+            new ProgressedGetRequest(getWeakReference(),
+                    client,
+                    "/" + userEmail + Util.PARAMS,
+                    callback)
+                    .execute().get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
         }
-        return allDaysAsString;
     }
 
     private void initViews(View[] views) {
@@ -138,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private View.OnClickListener getLoginBtnClickListener(View view, final EditText emailBox,
+    private View.OnClickListener getLoginBtnClickListener(final EditText emailBox,
                                                           final EditText password) {
         return new View.OnClickListener() {
 
@@ -158,17 +146,36 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     if (isValidEmailAddress(emailText)) {
                         if (isValidPasscode(passwordText.toCharArray())) {
-                            LoginAttempt attempt = new LoginAttempt(mainActivity, view, System.currentTimeMillis(), emailText, passwordText);
-                            attempt.start();
 
-                            Util.waitThread(mainActivity);
+                            Client loginClient = new Client(
+                                    Util.DEFAULT_TTRAINPARSE,
+                                    GetRequest.Type.GET_USER_INFO);
 
-                            UserdataRequest userdataRequest = attempt.getUserdataRequest();
-                            if (attempt.wasSuccessful()) {
-                                mainActivity.doPostLogin(view, userdataRequest);//user logs in, if they stored their stuff already
-                            } else {
-                                mainActivity.showToast("Invalid username/password", "long");
-                            }
+                            new ProgressedGetRequest(getWeakReference(),
+                                    loginClient, "/" + emailText + Util.PARAMS, new RequestResponseCompletionEvent() {
+                                @Override
+                                public void onCompletion(RequestResponse requestResponse) {
+                                    if (requestResponse.getResponseCode() == 404) {
+                                        getMainActivity().showToast("Invalid username / password", "long");
+                                        return;
+                                    }
+                                    RequestResponseData data = requestResponse.getData();
+                                    if (data instanceof UserdataRequestResponseData) {
+                                        UserdataRequestResponseData fetched = (UserdataRequestResponseData) data;
+                                        LoginAttempt loginAttempt =
+                                                new LoginAttempt(getMainActivity(),
+                                                        emailText,
+                                                        passwordText,
+                                                        fetched);
+                                        if (loginAttempt.wasSuccessful()) {
+                                            getMainActivity().doPostSuccessfulLogin(fetched); //user logs in, if they stored their stuff already
+                                            getMainActivity().showToast("Success - redirecting...", "long");
+
+                                        }
+                                    }
+                                }
+                            }).execute();
+
                         } else {
                             showToast("That's not a valid password!", "short");
                         }
@@ -180,51 +187,75 @@ public class MainActivity extends AppCompatActivity {
         };
     }
 
-    private boolean hasEnteredLessonsBefore() {
-        File lessonFile = new File(getFilesDir(), LESSON_NAME_FILE_NAME);
-        return lessonFile.exists();
-    }
-
-    public void doPostLogin(View currentView, UserdataRequest request) {
+    private void doPostSuccessfulLogin(UserdataRequestResponseData responseData) {
         if (hasInternet()) { //To be safe
-            if (hasEnteredLessonsBefore()) {
-                boolean updating = addLessonInfoButton.isChecked();
-                if (updating) {
-                    startLessonSelect(currentView, true, request);
-                } else { //show time display
-
-                }
-            } else { //open lesson select
-                startLessonSelect(currentView, false, request);
-            }
-            mainActivity.showToast("Welcome to the app!", "long");
+            sendHasEnteredLessonsBeforeRequest(responseData.getUserEmail(),
+                    new RequestResponseCompletionEvent() {
+                        @Override
+                        public void onCompletion(RequestResponse requestResponse) {
+                            HasEnteredLessonsBeforeRequestResponseData data = (HasEnteredLessonsBeforeRequestResponseData) requestResponse.getData();
+                            Context context = getMainActivity().getBaseContext();
+                            User newUser = User.fromData(responseData);
+                            if (data != null && data.hasEnteredLessonsBefore()) {
+                                boolean updating = addLessonInfoButton.isChecked();
+                                if (updating) {
+                                    startLessonSelect(context, true, responseData);
+                                } else { //show time display
+                                    startTimeDisplayActivity(context, getWeakReference(),
+                                            newUser);
+                                }
+                            } else { //open lesson select
+                                startLessonSelect(context, false, responseData);
+                            }
+                        }
+                    });
         }
     }
 
-    public static void startTimeDisplayActivity(Context fromContext, String email, boolean isUpdating, ArrayList lessons) {
-        Intent toTimeDisplay = new Intent(fromContext, TimeDisplayActivity.class);
-        toTimeDisplay.putExtra("email", email);
-        toTimeDisplay.putExtra("wasUpdating", isUpdating);
-        toTimeDisplay.putExtra("lessons", lessons);
-        fromContext.startActivity(toTimeDisplay);
-    }
-
-    private void startLessonSelect(View currentView, boolean updating, UserdataRequest request) {
+    private void startLessonSelect(Context context, boolean updating, UserdataRequestResponseData request) {
         Intent msgToLessonSelectActivity = new Intent(context, LessonSelectActivity.class);
-        Bundle bund = new Bundle();
-        bund.putBoolean("isUpdating", updating);
-        bund.putString("email", request.getUserEmail());
-        bund.putString("homeCrs", request.getHomeCrs());
-        ArrayList<String> alreadySelectedLessons = new ArrayList<>();
-        if (updating) {
+        Bundle bundleForLessonSelect = new Bundle();
+        bundleForLessonSelect.putBoolean("isUpdating", updating);
+        bundleForLessonSelect.putString("email", request.getUserEmail());
+        bundleForLessonSelect.putString("homeCrs", request.getHomeCrs());
 
+        Client lessonNamesClient = new Client(Util.DEFAULT_TTRAINPARSE, GetRequest.Type.GET_LESSON_NAMES);
+        if (updating) {
+            new ProgressedGetRequest(getWeakReference(), lessonNamesClient, "/" + request.getUserEmail() + Util.PARAMS, new RequestResponseCompletionEvent() {
+                @Override
+                public void onCompletion(RequestResponse requestResponse) {
+                    RequestResponseData data = requestResponse.getData();
+                    if (data instanceof LessonNameRequestResponseData) {
+                        LessonNameRequestResponseData lessonNameData = (LessonNameRequestResponseData) data;
+
+                        addLessonsToBundle(msgToLessonSelectActivity,
+                                lessonNameData.getLessonNames(),
+                                bundleForLessonSelect);
+
+
+                        startActivity(msgToLessonSelectActivity);
+                    }
+                }
+            });
+        } else {
+            addLessonsToBundle(msgToLessonSelectActivity,
+                    new ArrayList<String>(),
+                    bundleForLessonSelect);
+            startActivity(msgToLessonSelectActivity);
         }
-        /**
-         * TODO continue this
-         */
-        bund.putStringArrayList("lessons", alreadySelectedLessons);
-        msgToLessonSelectActivity.putExtras(bund);
-        startActivity(msgToLessonSelectActivity);
+    }
+
+    private void addLessonsToBundle(Intent msgToLessonSelectActivity, ArrayList<String> array, Bundle bundleForLessonSelect) {
+        bundleForLessonSelect.putStringArrayList("lessons", array);
+        msgToLessonSelectActivity.putExtras(bundleForLessonSelect);
+    }
+
+    private MainActivity getMainActivity() {
+        return mainActivity;
+    }
+
+    public ProgressBar getMainActivityProgressBar() {
+        return mainActivityProgressBar;
     }
 
     private boolean isValidPasscode(char[] password) {
@@ -257,10 +288,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void setAlpha(View view, float f) {
-        view.setAlpha(f);
-    }
-
     public void showToast(Context c, String text, String length, boolean show) {
         Toast toast = Toast.makeText(c, text, length == "short" ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG);
         if (show) toast.show();
@@ -288,74 +315,43 @@ public class MainActivity extends AppCompatActivity {
         return inAnimation;
     }
 
-    private Animation fadeOutAlpha(TextView view, float startAlpha, long outDuration, String newText, boolean start) {
-        Animation outAnimation = fadeOutAlpha(view, startAlpha, outDuration, false);
-        view.setText(newText);
-        if (start) outAnimation.start();
-        return outAnimation;
-    }
-
-    private Animation fadeOutAlpha(final TextView view, float startAlpha, long outDuration, boolean start) {
-        final Animation outAnimation = new AlphaAnimation(startAlpha, 0F);
-        outAnimation.setDuration(outDuration);
-        if (start) view.startAnimation(outAnimation);
-        outAnimation.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {
-
-            }
-
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                view.setAlpha(0F); //keeps it hidden
-            }
-
-            @Override
-            public void onAnimationRepeat(Animation animation) {
-
-            }
-        });
-        return outAnimation;
-    }
-
     public boolean hasInternet() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    final URL amazonWS = new URL("http://checkip.amazonaws.com");
-                    new BufferedReader(new InputStreamReader(
-                            amazonWS.openStream()));
-                } catch (IOException e) {
-                    e.printStackTrace();
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivityManager == null) return false;
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    }
+
+    /**
+     * Inner class to allow manipulation of ProgressBar
+     */
+    private class ProgressedGetRequest extends GetRequest {
+
+        private ProgressedGetRequest(WeakReference<Activity> weakReference, Client client, String parameter, RequestResponseCompletionEvent requestResponseCompletionEvent) {
+            super(weakReference, client, parameter, requestResponseCompletionEvent);
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... progress) {
+            Activity reference = getWeakReference().get();
+            if (reference != null) {
+                ProgressBar bar = reference.findViewById(R.id.mainActivityProgressBar);
+                if (bar.getVisibility() == View.INVISIBLE || bar.getVisibility() == View.GONE) {
+                    bar.setVisibility(View.VISIBLE);
                 }
+                bar.setProgress(progress[0]);
             }
-        });
-        hasInternet = true;
-        return hasInternet;
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        for (int i = 0; i < 100; i++) {
-            System.out.println("ON PAUSE");
         }
-    }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        for (int i = 0; i < 100; i++) {
-            System.out.println("ON RESUME");
-        }
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        for (int i = 0; i < 100; i++) {
-            System.out.println("ON STOP");
+        @Override
+        protected void onPostExecute(RequestResponse requestResponse) {
+            super.onPostExecute(requestResponse);
+            Activity reference = getWeakReference().get();
+            if (getWeakReference().get() != null) {
+                ProgressBar bar = reference.findViewById(R.id.mainActivityProgressBar);
+                bar.setVisibility(View.INVISIBLE);
+            }
         }
     }
 }

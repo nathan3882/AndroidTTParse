@@ -1,20 +1,23 @@
 package me.nathan3882.androidttrainparse;
 
-import java.util.Arrays;
+import me.nathan3882.requestsResponses.GetRequest;
 
 public class Client {
 
+    private GetRequest.Type action;
+
     private String webService;
 
-    public Client(String webService) {
-        this.webService = webService;
-    }
-
-    public Request generateRequest(String action, String... parameters) {
-        return new Request(this, action, Arrays.asList(parameters));
+    public Client(String webService, GetRequest.Type action) {
+        this.action = action;
+        this.webService = webService + action.getWebServiceAction(false);
     }
 
     public String getWebService() {
         return webService;
+    }
+
+    public GetRequest.Type getAction() {
+        return this.action;
     }
 }
