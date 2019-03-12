@@ -1,5 +1,6 @@
 package me.nathan3882.activities;
 
+import android.app.Activity;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -8,17 +9,14 @@ import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.support.v7.app.AppCompatActivity;
-import me.nathan3882.androidttrainparse.DayClass;
-import me.nathan3882.androidttrainparse.DayEquivalent;
-import me.nathan3882.androidttrainparse.LessonInfo;
-import me.nathan3882.androidttrainparse.Util;
+import me.nathan3882.androidttrainparse.*;
 import me.nathan3882.testingapp.R;
 
+import java.lang.ref.WeakReference;
 import java.time.DayOfWeek;
 import java.util.*;
 
-public class TimeDisplayActivity extends AppCompatActivity implements DayClass.DayFragment.OnFragmentInteractionListener {
+public class TimeDisplayActivity extends AbstractPostLoginActivity implements DayClass.DayFragment.OnFragmentInteractionListener {
 
     private final TimeDisplayActivity timeDisplayActivity = this;
 
@@ -39,10 +37,12 @@ public class TimeDisplayActivity extends AppCompatActivity implements DayClass.D
     private ArrayList<String> lessonNames;
     private String email;
     private DayOfWeek[] daysToShow = new DayOfWeek[5];
+    private User user;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_time_display);
         Bundle extras = getIntent().getExtras();
         setLessonNames(extras.getStringArrayList("lessons"));
@@ -89,6 +89,16 @@ public class TimeDisplayActivity extends AppCompatActivity implements DayClass.D
         this.lessonNames = lessonNames;
     }
 
+    @Override
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    @Override
+    User getUser() {
+        return null;
+    }
+
     public String getEmail() {
         return email;
     }
@@ -110,6 +120,11 @@ public class TimeDisplayActivity extends AppCompatActivity implements DayClass.D
 
     }
 
+    @Override
+    public WeakReference<Activity> getWeakReference() {
+        return null;
+    }
+
     public class SectionsPagerAdapter extends FragmentPagerAdapter {
 
         public SectionsPagerAdapter(FragmentManager fm) {
@@ -124,7 +139,7 @@ public class TimeDisplayActivity extends AppCompatActivity implements DayClass.D
         @Override
         public Fragment getItem(int position) {
             int dayInt = ++position; //0 is monday, 1 is tuesday etc
-            DayEquivalent dEquiv = new DayEquivalent(getTimeDisplayActivity(), dayInt);
+            DayEquivalent dEquiv = new DayEquivalent(getWeakReference(), dayInt);
             DayOfWeek dayOfWeek = dEquiv.getEquivalent();
             if (dEquiv.getPreviouslyStoredEquivalents().containsKey(dayOfWeek)) {
                 return DayEquivalent.getPreviouslyStoredEquivalent(dayOfWeek);

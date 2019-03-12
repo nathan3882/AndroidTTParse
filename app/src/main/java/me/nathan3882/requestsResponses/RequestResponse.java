@@ -34,6 +34,7 @@ public class RequestResponse {
 
     @Nullable
     public RequestResponseData getData() {
+        if (requestResponseData == null) System.err.println("Request response data is null, invalid parse in " + GetRequest.class.getName());
         return requestResponseData;
     }
 

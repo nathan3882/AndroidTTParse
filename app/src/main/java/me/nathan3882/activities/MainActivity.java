@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -16,10 +17,7 @@ import me.nathan3882.androidttrainparse.Client;
 import me.nathan3882.androidttrainparse.LoginAttempt;
 import me.nathan3882.androidttrainparse.User;
 import me.nathan3882.androidttrainparse.Util;
-import me.nathan3882.requestsResponses.AsyncContextRef;
-import me.nathan3882.requestsResponses.GetRequest;
-import me.nathan3882.requestsResponses.RequestResponse;
-import me.nathan3882.requestsResponses.RequestResponseCompletionEvent;
+import me.nathan3882.requestsResponses.*;
 import me.nathan3882.responseData.HasEnteredLessonsBeforeRequestResponseData;
 import me.nathan3882.responseData.LessonNameRequestResponseData;
 import me.nathan3882.responseData.RequestResponseData;
@@ -28,11 +26,11 @@ import me.nathan3882.testingapp.R;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.concurrent.ExecutionException;
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MainActivity extends AppCompatActivity implements AsyncContextRef<Activity> {
+public class MainActivity extends AppCompatActivity implements IActivityReferencer<Activity> {
 
     private MainActivity mainActivity;
     private WeakReference<Activity> weakReference;
@@ -44,32 +42,80 @@ public class MainActivity extends AppCompatActivity implements AsyncContextRef<A
     private ImageView loginButtonView;
     private TextView loginOrRegister;
 
-    public static void startTimeDisplayActivity(Context currentContext, WeakReference<Activity> reference, User user) {
+    public static void startTimeDisplayActivity(WeakReference<Activity> reference, User user) {
         Client lessonNamesClient = new Client(Util.DEFAULT_TTRAINPARSE, GetRequest.Type.GET_LESSON_NAMES);
 
-        new GetRequest(reference, lessonNamesClient, "/" + user.getUserEmail() + Util.PARAMS, new RequestResponseCompletionEvent() {
+        new ProgressedGetRequest(reference, lessonNamesClient, "/" + user.getUserEmail() + Util.PARAMS, new ResponseEvent() {
             @Override
-            public void onCompletion(RequestResponse requestResponse) {
+            public void onCompletion(@NonNull RequestResponse requestResponse) {
                 RequestResponseData data = requestResponse.getData();
                 if (data instanceof LessonNameRequestResponseData) {
                     LessonNameRequestResponseData lessonNameData =
                             (LessonNameRequestResponseData) data;
 
                     ArrayList<String> lessonNames = lessonNameData.getLessonNames();
-
-                    Intent toTimeDisplay = new Intent(currentContext, TimeDisplayActivity.class);
-                    toTimeDisplay.putExtra("email", user.getUserEmail());
-                    toTimeDisplay.putExtra("homeCrs", user.getHomeCrs());
-                    toTimeDisplay.putStringArrayListExtra("lessons", lessonNames);
-                    currentContext.startActivity(toTimeDisplay);
+                    Activity activity = reference.get();
+                    if (activity != null) {
+                        Intent toTimeDisplay = new Intent(activity, TimeDisplayActivity.class);
+                        toTimeDisplay.putExtra("email", user.getUserEmail());
+                        toTimeDisplay.putExtra("homeCrs", user.getHomeCrs());
+                        toTimeDisplay.putStringArrayListExtra("lessons", lessonNames);
+                        activity.startActivity(toTimeDisplay);
+                    }
                 }
+            }
+
+            @Override
+            public void onFailure() {
+
             }
         }).execute();
     }
 
-    @Override
-    public WeakReference<Activity> getWeakReference() {
-        return this.weakReference;
+    public static void startLessonSelect(WeakReference<Activity> reference, boolean updating, UserdataRequestResponseData request) {
+        Intent msgToLessonSelectActivity = new Intent(reference.get(), LessonSelectActivity.class);
+        Bundle bundleForLessonSelect = new Bundle();
+        bundleForLessonSelect.putBoolean("isUpdating", updating);
+        bundleForLessonSelect.putString("email", request.getUserEmail());
+        bundleForLessonSelect.putString("homeCrs", request.getHomeCrs());
+
+        Client lessonNamesClient = new Client(Util.DEFAULT_TTRAINPARSE, GetRequest.Type.GET_LESSON_NAMES);
+        if (updating) {
+            System.out.println("updating");
+            new ProgressedGetRequest(reference, lessonNamesClient, "/" + request.getUserEmail() + Util.PARAMS,
+                    new ResponseEvent() {
+                        @Override
+                        public void onCompletion(@NonNull RequestResponse requestResponse) {
+                            RequestResponseData data = requestResponse.getData();
+                            if (data instanceof LessonNameRequestResponseData) {
+
+                                LessonNameRequestResponseData lessonNameData = (LessonNameRequestResponseData) data;
+                                System.out.println("Lesson names = " + lessonNameData);
+                                //Business studies, Biology, Computer Science
+                                String lessonNamesResponse = lessonNameData.getResponseString();
+                                if (lessonNamesResponse.contains(Util.LESSON_STORAGE_SPLIT_CHAR)) { //if they have a ", " in their db string
+                                    bundleForLessonSelect.putStringArrayList("lessons", new ArrayList<>(
+                                            Arrays.asList(lessonNamesResponse.split(Util.LESSON_STORAGE_SPLIT_CHAR))));
+                                } else { //no comma in their db string, no lessons
+                                    bundleForLessonSelect.putStringArrayList("lessons", new ArrayList<>());
+                                }
+
+                                msgToLessonSelectActivity.putExtras(bundleForLessonSelect);
+
+                                reference.get().startActivity(msgToLessonSelectActivity);
+                            }
+                        }
+
+                        @Override
+                        public void onFailure() {
+
+                        }
+                    });
+        } else {
+            bundleForLessonSelect.putStringArrayList("lessons", new ArrayList<>());
+            msgToLessonSelectActivity.putExtras(bundleForLessonSelect);
+            reference.get().startActivity(msgToLessonSelectActivity);
+        }
     }
 
     @Override
@@ -80,9 +126,10 @@ public class MainActivity extends AppCompatActivity implements AsyncContextRef<A
 
         this.mainActivity = this;
         this.weakReference = new WeakReference<>(mainActivity);
+
         this.loginOrRegister = findViewById(R.id.loginOrRegisterText);
 
-        loginOrRegister.setText("Login below using your previously registered account!");
+        loginOrRegister.setText(R.string.loginBelow);
 
         this.addLessonInfoButton = findViewById(R.id.addLessonInfoButton);
 
@@ -105,25 +152,6 @@ public class MainActivity extends AppCompatActivity implements AsyncContextRef<A
 
         loginButtonView.setOnClickListener(getLoginBtnClickListener(emailEnter, numericPassword));
 
-    }
-
-    private void sendHasEnteredLessonsBeforeRequest(String userEmail, RequestResponseCompletionEvent callback) {
-        Client client = new Client(Util.DEFAULT_TTRAINPARSE, GetRequest.Type.HAS_LESSON_NAMES);
-        try {
-            new ProgressedGetRequest(getWeakReference(),
-                    client,
-                    "/" + userEmail + Util.PARAMS,
-                    callback)
-                    .execute().get();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void initViews(View[] views) {
-        for (View view : views) {
-            view.setAlpha(0F);
-        }
     }
 
     private View.OnClickListener getLoginBtnClickListener(final EditText emailBox,
@@ -152,9 +180,9 @@ public class MainActivity extends AppCompatActivity implements AsyncContextRef<A
                                     GetRequest.Type.GET_USER_INFO);
 
                             new ProgressedGetRequest(getWeakReference(),
-                                    loginClient, "/" + emailText + Util.PARAMS, new RequestResponseCompletionEvent() {
+                                    loginClient, "/" + emailText + Util.PARAMS, new ResponseEvent() {
                                 @Override
-                                public void onCompletion(RequestResponse requestResponse) {
+                                public void onCompletion(@NonNull RequestResponse requestResponse) {
                                     if (requestResponse.getResponseCode() == 404) {
                                         getMainActivity().showToast("Invalid username / password", "long");
                                         return;
@@ -170,9 +198,15 @@ public class MainActivity extends AppCompatActivity implements AsyncContextRef<A
                                         if (loginAttempt.wasSuccessful()) {
                                             getMainActivity().doPostSuccessfulLogin(fetched); //user logs in, if they stored their stuff already
                                             getMainActivity().showToast("Success - redirecting...", "long");
-
+                                        } else {
+                                            getMainActivity().showToast("Invalid username / password", "long");
                                         }
                                     }
+                                }
+
+                                @Override
+                                public void onFailure() {
+                                    showToast("An unknown error occurred", "long");
                                 }
                             }).execute();
 
@@ -189,65 +223,46 @@ public class MainActivity extends AppCompatActivity implements AsyncContextRef<A
 
     private void doPostSuccessfulLogin(UserdataRequestResponseData responseData) {
         if (hasInternet()) { //To be safe
-            sendHasEnteredLessonsBeforeRequest(responseData.getUserEmail(),
-                    new RequestResponseCompletionEvent() {
+            Client client = new Client(Util.DEFAULT_TTRAINPARSE, GetRequest.Type.HAS_LESSON_NAMES);
+            new ProgressedGetRequest(getWeakReference(),
+                    client,
+                    "/" + responseData.getUserEmail() + Util.PARAMS,
+                    new ResponseEvent() {
                         @Override
-                        public void onCompletion(RequestResponse requestResponse) {
+                        public void onCompletion(@NonNull RequestResponse requestResponse) {
                             HasEnteredLessonsBeforeRequestResponseData data = (HasEnteredLessonsBeforeRequestResponseData) requestResponse.getData();
-                            Context context = getMainActivity().getBaseContext();
-                            User newUser = User.fromData(responseData);
+
                             if (data != null && data.hasEnteredLessonsBefore()) {
                                 boolean updating = addLessonInfoButton.isChecked();
+                                System.out.println("is checked = " + updating);
                                 if (updating) {
-                                    startLessonSelect(context, true, responseData);
+                                    startLessonSelect(getWeakReference(), true, responseData);
                                 } else { //show time display
-                                    startTimeDisplayActivity(context, getWeakReference(),
-                                            newUser);
+                                    User newUser = User.fromData(responseData);
+                                    startTimeDisplayActivity(getWeakReference(), newUser);
                                 }
                             } else { //open lesson select
-                                startLessonSelect(context, false, responseData);
+                                System.out.println("data = " + data);
+                                System.out.println("has entered = " + data.hasEnteredLessonsBefore());
+
+                                startLessonSelect(getWeakReference(), false, responseData);
                             }
                         }
-                    });
-        }
-    }
 
-    private void startLessonSelect(Context context, boolean updating, UserdataRequestResponseData request) {
-        Intent msgToLessonSelectActivity = new Intent(context, LessonSelectActivity.class);
-        Bundle bundleForLessonSelect = new Bundle();
-        bundleForLessonSelect.putBoolean("isUpdating", updating);
-        bundleForLessonSelect.putString("email", request.getUserEmail());
-        bundleForLessonSelect.putString("homeCrs", request.getHomeCrs());
-
-        Client lessonNamesClient = new Client(Util.DEFAULT_TTRAINPARSE, GetRequest.Type.GET_LESSON_NAMES);
-        if (updating) {
-            new ProgressedGetRequest(getWeakReference(), lessonNamesClient, "/" + request.getUserEmail() + Util.PARAMS, new RequestResponseCompletionEvent() {
-                @Override
-                public void onCompletion(RequestResponse requestResponse) {
-                    RequestResponseData data = requestResponse.getData();
-                    if (data instanceof LessonNameRequestResponseData) {
-                        LessonNameRequestResponseData lessonNameData = (LessonNameRequestResponseData) data;
-
-                        addLessonsToBundle(msgToLessonSelectActivity,
-                                lessonNameData.getLessonNames(),
-                                bundleForLessonSelect);
-
-
-                        startActivity(msgToLessonSelectActivity);
-                    }
-                }
-            });
+                        @Override
+                        public void onFailure() {
+                            showToast("An unknown error occurred", "long");
+                        }
+                    }).execute();
         } else {
-            addLessonsToBundle(msgToLessonSelectActivity,
-                    new ArrayList<String>(),
-                    bundleForLessonSelect);
-            startActivity(msgToLessonSelectActivity);
+            showNetworkToasts();
         }
     }
 
-    private void addLessonsToBundle(Intent msgToLessonSelectActivity, ArrayList<String> array, Bundle bundleForLessonSelect) {
-        bundleForLessonSelect.putStringArrayList("lessons", array);
-        msgToLessonSelectActivity.putExtras(bundleForLessonSelect);
+    private void initViews(View[] views) {
+        for (View view : views) {
+            view.setAlpha(0F);
+        }
     }
 
     private MainActivity getMainActivity() {
@@ -289,7 +304,7 @@ public class MainActivity extends AppCompatActivity implements AsyncContextRef<A
     }
 
     public void showToast(Context c, String text, String length, boolean show) {
-        Toast toast = Toast.makeText(c, text, length == "short" ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG);
+        Toast toast = Toast.makeText(c, text, length.equals("short") ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG);
         if (show) toast.show();
     }
 
@@ -323,35 +338,8 @@ public class MainActivity extends AppCompatActivity implements AsyncContextRef<A
         return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 
-    /**
-     * Inner class to allow manipulation of ProgressBar
-     */
-    private class ProgressedGetRequest extends GetRequest {
-
-        private ProgressedGetRequest(WeakReference<Activity> weakReference, Client client, String parameter, RequestResponseCompletionEvent requestResponseCompletionEvent) {
-            super(weakReference, client, parameter, requestResponseCompletionEvent);
-        }
-
-        @Override
-        protected void onProgressUpdate(Integer... progress) {
-            Activity reference = getWeakReference().get();
-            if (reference != null) {
-                ProgressBar bar = reference.findViewById(R.id.mainActivityProgressBar);
-                if (bar.getVisibility() == View.INVISIBLE || bar.getVisibility() == View.GONE) {
-                    bar.setVisibility(View.VISIBLE);
-                }
-                bar.setProgress(progress[0]);
-            }
-        }
-
-        @Override
-        protected void onPostExecute(RequestResponse requestResponse) {
-            super.onPostExecute(requestResponse);
-            Activity reference = getWeakReference().get();
-            if (getWeakReference().get() != null) {
-                ProgressBar bar = reference.findViewById(R.id.mainActivityProgressBar);
-                bar.setVisibility(View.INVISIBLE);
-            }
-        }
+    @Override
+    public WeakReference<Activity> getWeakReference() {
+        return this.weakReference;
     }
 }
