@@ -1,10 +1,8 @@
-package me.nathan3882.requestsResponses;
+package me.nathan3882.requesting;
 
 import android.os.AsyncTask;
 import me.nathan3882.androidttrainparse.Client;
-import me.nathan3882.responseData.HasEnteredLessonsBeforeRequestResponseData;
-import me.nathan3882.responseData.LessonNameRequestResponseData;
-import me.nathan3882.responseData.UserdataRequestResponseData;
+import me.nathan3882.responding.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,7 +15,7 @@ import java.util.List;
 public class GetRequest extends AsyncTask<String, Integer, RequestResponse> {
     private Client client;
 
-    private Type action;
+    private Action action;
 
     private List<String> parameters;
 
@@ -37,7 +35,7 @@ public class GetRequest extends AsyncTask<String, Integer, RequestResponse> {
         this.requestResponse = requestResponse;
         if (requestResponse != null) {
             responseEvent.onCompletion(requestResponse);
-        }else{
+        } else {
             responseEvent.onFailure();
         }
     }
@@ -76,17 +74,18 @@ public class GetRequest extends AsyncTask<String, Integer, RequestResponse> {
             StringBuilder builder = new StringBuilder();
 
             in.lines().forEach(builder::append);
+
             publishProgress(70);
 
             switch (getAction()) {
                 case GET_USER_INFO:
                     requestResponse.setData(new UserdataRequestResponseData(builder.toString()));
                     break;
-                case GET_LESSON_NAMES:
+                case GET_USER_LESSON_NAMES:
                     requestResponse.setData(new LessonNameRequestResponseData(builder.toString()));
                     break;
-                case HAS_LESSON_NAMES:
-                    requestResponse.setData(new HasEnteredLessonsBeforeRequestResponseData(builder.toString()));
+                case GET_USER_HAS_LESSON_NAMES:
+                    requestResponse.setData(new HasLessonNamesRequestResponseData(builder.toString()));
                     break;
             }
             publishProgress(80);
@@ -107,7 +106,7 @@ public class GetRequest extends AsyncTask<String, Integer, RequestResponse> {
         return route;
     }
 
-    private Type getAction() {
+    private Action getAction() {
         return action;
     }
 
@@ -115,19 +114,4 @@ public class GetRequest extends AsyncTask<String, Integer, RequestResponse> {
         return parameters;
     }
 
-    public enum Type {
-        GET_USER_INFO("getUserInfo"),
-        GET_LESSON_NAMES("getLessonNames"),
-        HAS_LESSON_NAMES("hasLessonNames");
-
-        private final String webServiceAction;
-
-        Type(String webServiceAction) {
-            this.webServiceAction = webServiceAction;
-        }
-
-        public String getWebServiceAction(boolean withTrailingFowardSlash) {
-            return webServiceAction + (withTrailingFowardSlash ? "/" : "");
-        }
-    }
 }

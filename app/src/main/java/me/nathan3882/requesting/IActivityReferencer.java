@@ -1,4 +1,4 @@
-package me.nathan3882.requestsResponses;
+package me.nathan3882.requesting;
 
 import android.support.annotation.Nullable;
 
@@ -13,7 +13,7 @@ public interface IActivityReferencer<T> {
     default WeakReference<T> getFrom(Object object, Class clazz) {
         try {
             return new WeakReference<T>((T) object);
-        }catch(ClassCastException e) {
+        } catch (ClassCastException e) {
             return null;
         }
     }
