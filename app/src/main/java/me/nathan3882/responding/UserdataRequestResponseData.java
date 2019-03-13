@@ -1,4 +1,4 @@
-package me.nathan3882.responseData;
+package me.nathan3882.responding;
 
 import org.json.JSONException;
 import org.json.JSONObject;

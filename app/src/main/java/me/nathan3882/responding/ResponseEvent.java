@@ -1,4 +1,4 @@
-package me.nathan3882.requestsResponses;
+package me.nathan3882.responding;
 
 import android.support.annotation.NonNull;
 

@@ -1,4 +1,4 @@
-package me.nathan3882.responseData;
+package me.nathan3882.responding;
 
 import android.support.annotation.Nullable;
 import org.json.JSONObject;

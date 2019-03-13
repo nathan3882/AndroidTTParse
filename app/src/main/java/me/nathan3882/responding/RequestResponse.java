@@ -1,16 +1,16 @@
-package me.nathan3882.requestsResponses;
+package me.nathan3882.responding;
 
 import android.support.annotation.Nullable;
-import me.nathan3882.responseData.RequestResponseData;
+import me.nathan3882.requesting.Action;
 
 public class RequestResponse {
 
     private final int responseCode;
     private String webService;
-    private GetRequest.Type action;
+    private Action action;
     private RequestResponseData requestResponseData = null;
 
-    public RequestResponse(String webService, GetRequest.Type action, int responseCode, RequestResponseData requestResponseData) {
+    public RequestResponse(String webService, Action action, int responseCode, RequestResponseData requestResponseData) {
         this.webService = webService;
         setData(requestResponseData);
         this.action = action;
@@ -20,7 +20,7 @@ public class RequestResponse {
         }
     }
 
-    public GetRequest.Type getAction() {
+    public Action getAction() {
         return action;
     }
 
@@ -34,7 +34,6 @@ public class RequestResponse {
 
     @Nullable
     public RequestResponseData getData() {
-        if (requestResponseData == null) System.err.println("Request response data is null, invalid parse in " + GetRequest.class.getName());
         return requestResponseData;
     }
 

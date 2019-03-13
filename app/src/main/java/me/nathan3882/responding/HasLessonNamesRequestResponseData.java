@@ -1,17 +1,17 @@
-package me.nathan3882.responseData;
+package me.nathan3882.responding;
 
 import android.support.annotation.Nullable;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class HasEnteredLessonsBeforeRequestResponseData implements RequestResponseData {
+public class HasLessonNamesRequestResponseData implements RequestResponseData {
 
 
     private JSONObject jsonObject;
     private boolean hasEnteredLessonsBefore;
     private String response;
 
-    public HasEnteredLessonsBeforeRequestResponseData(String response) {
+    public HasLessonNamesRequestResponseData(String response) {
         this.response = response;
         try {
             setJsonObject(new JSONObject(response));
@@ -28,7 +28,7 @@ public class HasEnteredLessonsBeforeRequestResponseData implements RequestRespon
     @Override
     public void updateSubclassValues() {
         try {
-            this.hasEnteredLessonsBefore = getJsonObject().getBoolean("hasEnteredLessonsBefore");
+            this.hasEnteredLessonsBefore = getJsonObject().getBoolean("hasLessonNames");
         } catch (JSONException e) {
             e.printStackTrace();
         }
