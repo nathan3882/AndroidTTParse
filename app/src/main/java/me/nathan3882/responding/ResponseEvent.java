@@ -4,7 +4,14 @@ import android.support.annotation.NonNull;
 
 public interface ResponseEvent {
 
-    void onCompletion(@NonNull RequestResponse requestResponse);
-    void onFailure();
+    default void onCompletion(@NonNull RequestResponse requestResponse) {
+
+    }
+    default void onFailure() {
+
+    }
+    default void doFinally() {
+
+    }
 
 }
