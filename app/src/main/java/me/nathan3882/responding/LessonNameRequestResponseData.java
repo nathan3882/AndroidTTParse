@@ -1,26 +1,27 @@
-package me.nathan3882.responseData;
+package me.nathan3882.responding;
 
 import android.support.annotation.Nullable;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class LessonNameRequestResponseData implements RequestResponseData {
 
     private JSONObject jsonObject;
-    private ArrayList<String> lessonNames = null;
+    private ArrayList<String> lessonNames = new ArrayList<>();
     private String responseJsonString;
 
     public LessonNameRequestResponseData(String responseJsonString) {
         this.responseJsonString = responseJsonString;
         try {
             setJsonObject(new JSONObject(responseJsonString));
-            updateSubclassValues();
         } catch (JSONException e) {
             e.printStackTrace();
         }
+
+        updateSubclassValues();
     }
 
     @Nullable
@@ -30,14 +31,14 @@ public class LessonNameRequestResponseData implements RequestResponseData {
 
     @Override
     public void updateSubclassValues() {
-        try {
-            JSONArray array = getJsonObject().getJSONArray("lessonNames");
-            lessonNames = new ArrayList<>();
-            for (int i = 0; i < array.length(); i++) {
-                lessonNames.add(array.getString(i));
+        if (getJsonObject() != null) {
+            String[] lessonNames = new String[0];
+            try {
+                lessonNames = getJsonObject().getString("lessonNames").split(", ");
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
-        } catch (NullPointerException | JSONException e) {
-            e.printStackTrace();
+            this.lessonNames.addAll(Arrays.asList(lessonNames));
         }
     }
 
