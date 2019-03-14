@@ -1,10 +1,11 @@
 package me.nathan3882.androidttrainparse;
 
 import android.app.Activity;
+import android.support.annotation.Nullable;
 import me.nathan3882.activities.ProgressBarable;
 import me.nathan3882.requesting.Action;
-import me.nathan3882.requesting.GetRequest;
 import me.nathan3882.requesting.KeyObjectPair;
+import me.nathan3882.requesting.PostRequest;
 import me.nathan3882.requesting.ProgressedPostRequest;
 import me.nathan3882.responding.ResponseEvent;
 import me.nathan3882.responding.UserdataRequestResponseData;
@@ -20,7 +21,7 @@ public class User implements ManipulableUser {
     private String password;
     private String salt;
     private String homeCrs;
-    private ArrayList<String> lessons = new ArrayList<>();
+    private ArrayList<String> localLessons = new ArrayList<>();
 
     private User(String userEmail, String homeCrs) {
         this.userEmail = userEmail;
@@ -28,7 +29,8 @@ public class User implements ManipulableUser {
     }
 
     public static User fromPrimitive(String userEmail, String homeCrs) {
-        User user = new User(userEmail, homeCrs).syncWithDatabase();
+        User user = new User(userEmail, homeCrs);
+        user.synchroniseWithDatabase();
         return user;
     }
 
@@ -36,9 +38,9 @@ public class User implements ManipulableUser {
         return new User(data.getUserEmail(), data.getHomeCrs());
     }
 
-    public User syncWithDatabase() {
+    @Override
+    public void synchroniseWithDatabase() {
 
-        return this;
     }
 
     public String getUserEmail() {
@@ -49,8 +51,8 @@ public class User implements ManipulableUser {
         return homeCrs;
     }
 
-    public ArrayList<String> getLessons() {
-        return lessons;
+    public ArrayList<String> getLocalLessons() {
+        return localLessons;
     }
 
     @Override
@@ -59,39 +61,53 @@ public class User implements ManipulableUser {
 
         List<KeyObjectPair> body = getBodyFromLessonName(lesson);
 
-        new GetRequest(client, "/" + getUserEmail(), event).execute();
+        new PostRequest(client, "/" + getUserEmail() + Util.PARAMS, body, event).execute();
     }
 
     @Override
     public void removeLesson(String lesson, ResponseEvent event) {
+        Client client = getNewRemoveLessonClient();
 
+        List<KeyObjectPair> body = getBodyFromLessonName(lesson);
+
+        new PostRequest(client, "/" + getUserEmail() + Util.PARAMS, body, event).execute();
     }
 
     @Override
     public void removeLessonProgressed(String lesson, WeakReference<Activity> reference, ProgressBarable barable, ResponseEvent event) {
+        Client client = getNewRemoveLessonClient();
 
+        List<KeyObjectPair> body = getBodyFromLessonName(lesson);
+
+        new ProgressedPostRequest(reference, barable.getProgressBarRid(), client, "/" + getUserEmail() + Util.PARAMS,
+                body, event).execute();
     }
 
     @Override
     public void addLessonProgressed(String lesson, WeakReference<Activity> reference,
                                     ProgressBarable barable, ResponseEvent event) {
-
         Client client = getNewAddLessonClient();
 
         List<KeyObjectPair> body = getBodyFromLessonName(lesson);
 
-        new ProgressedPostRequest(reference, barable, client, "/" + getUserEmail(), body, event).execute();
+        new ProgressedPostRequest(reference, barable.getProgressBarRid(), client, "/" + getUserEmail() + Util.PARAMS,
+                body, event).execute();
     }
 
     private List<KeyObjectPair> getBodyFromLessonName(String lesson) {
         return Collections.singletonList(new KeyObjectPair("lessonName", lesson));
     }
 
+    private Client getNewRemoveLessonClient() {
+        return new Client(Util.DEFAULT_TTRAINPARSE, Action.POST_REMOVE_USER_LESSON);
+    }
+
     private Client getNewAddLessonClient() {
         return new Client(Util.DEFAULT_TTRAINPARSE, Action.POST_ADD_USER_LESSON);
     }
 
-    public void updateLocalTo(ArrayList<String> lessonNames) {
-        this.lessons = lessonNames;
+    public void synchronise(@Nullable ArrayList<String> lessonNames) {
+        if (lessonNames == null) return;
+        this.localLessons = lessonNames;
     }
 }
