@@ -38,11 +38,6 @@ public class User implements ManipulableUser {
         return new User(data.getUserEmail(), data.getHomeCrs());
     }
 
-    @Override
-    public void synchroniseWithDatabase() {
-
-    }
-
     public String getUserEmail() {
         return userEmail;
     }
@@ -53,6 +48,22 @@ public class User implements ManipulableUser {
 
     public ArrayList<String> getLocalLessons() {
         return localLessons;
+    }
+
+    public void synchronise(@Nullable ArrayList<String> lessonNames) {
+        if (lessonNames == null) return;
+        this.localLessons = lessonNames;
+    }
+
+    @Override
+    public void addLessonProgressed(String lesson, WeakReference<Activity> reference,
+                                    ProgressBarable barable, ResponseEvent event) {
+        Client client = getNewAddLessonClient();
+
+        List<KeyObjectPair> body = getBodyFromLessonName(lesson);
+
+        new ProgressedPostRequest(reference, barable.getProgressBarRid(), client, "/" + getUserEmail() + Util.PARAMS,
+                body, event).execute();
     }
 
     @Override
@@ -74,7 +85,8 @@ public class User implements ManipulableUser {
     }
 
     @Override
-    public void removeLessonProgressed(String lesson, WeakReference<Activity> reference, ProgressBarable barable, ResponseEvent event) {
+    public void removeLessonProgressed(String lesson, WeakReference<Activity> reference,
+                                       ProgressBarable barable, ResponseEvent event) {
         Client client = getNewRemoveLessonClient();
 
         List<KeyObjectPair> body = getBodyFromLessonName(lesson);
@@ -84,14 +96,8 @@ public class User implements ManipulableUser {
     }
 
     @Override
-    public void addLessonProgressed(String lesson, WeakReference<Activity> reference,
-                                    ProgressBarable barable, ResponseEvent event) {
-        Client client = getNewAddLessonClient();
+    public void synchroniseWithDatabase() {
 
-        List<KeyObjectPair> body = getBodyFromLessonName(lesson);
-
-        new ProgressedPostRequest(reference, barable.getProgressBarRid(), client, "/" + getUserEmail() + Util.PARAMS,
-                body, event).execute();
     }
 
     private List<KeyObjectPair> getBodyFromLessonName(String lesson) {
@@ -104,10 +110,5 @@ public class User implements ManipulableUser {
 
     private Client getNewAddLessonClient() {
         return new Client(Util.DEFAULT_TTRAINPARSE, Action.POST_ADD_USER_LESSON);
-    }
-
-    public void synchronise(@Nullable ArrayList<String> lessonNames) {
-        if (lessonNames == null) return;
-        this.localLessons = lessonNames;
     }
 }

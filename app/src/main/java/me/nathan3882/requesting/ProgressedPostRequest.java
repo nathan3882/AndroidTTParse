@@ -27,22 +27,21 @@ public class ProgressedPostRequest extends PostRequest implements ProgressBarabl
         this.weakReference = weakReference;
     }
 
+    public String getParameter() {
+        return parameter;
+    }
+
     @Override
     protected void onProgressUpdate(Integer... values) {
         ProgressBar bar = getProgressBar(getReferenceValue(), getProgressBarRid());
-        if (bar != null) {
-            if (bar.getVisibility() == View.INVISIBLE || bar.getVisibility() == View.GONE) {
-                bar.setVisibility(View.VISIBLE);
-                bar.setProgress(values[0]);
-            }
-        }
+        doProgress(bar, values[0]);
     }
 
     @Override
     protected void onPostExecute(RequestResponse requestResponse) {
         super.onPostExecute(requestResponse);
         ProgressBar bar = getProgressBar(getReferenceValue(), getProgressBarRid());
-        if (bar != null && bar.getVisibility() == View.VISIBLE) {
+        if (bar != null) {
             bar.setVisibility(View.INVISIBLE);
             bar.setProgress(0);
         }
@@ -51,10 +50,6 @@ public class ProgressedPostRequest extends PostRequest implements ProgressBarabl
     @Override
     public int getProgressBarRid() {
         return barId;
-    }
-
-    public String getParameter() {
-        return parameter;
     }
 
     @Override

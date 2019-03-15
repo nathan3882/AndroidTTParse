@@ -31,16 +31,8 @@ public class PostRequest extends AsyncTask<String, Integer, RequestResponse> {
         this.responseEvent = responseEvent;
     }
 
-    @Override
-    protected void onPostExecute(RequestResponse requestResponse) {
-        this.requestResponse = requestResponse;
-        System.out.println("response code = " + requestResponse.getResponseCode());
-        if (requestResponse != null && requestResponse.getResponseCode() == HttpURLConnection.HTTP_OK) {
-            responseEvent.onCompletion(requestResponse);
-        } else {
-            responseEvent.onFailure();
-        }
-        responseEvent.doFinally();
+    public List<KeyObjectPair> getBody() {
+        return body;
     }
 
     //So many publish progresses to make it seem more of a gradual thing, not just instantly done
@@ -50,13 +42,18 @@ public class PostRequest extends AsyncTask<String, Integer, RequestResponse> {
         //Set data few lines down\
         publishProgress(20);
 
-        HttpURLConnection connection = null;
-        int responseCode;
+        int responseCode = 500;
+
+        String webService = client.getWebService() + parameter;
+
+        System.out.println("trying with web service " + webService);
+
         try {
-            connection = (HttpURLConnection) new URL(client.getWebService() + parameter).openConnection();
+            HttpURLConnection connection = (HttpURLConnection) new URL(webService).openConnection();
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Content-Type", "application/json");
             connection.setDoOutput(true);
+            connection.setDoInput(true);
             publishProgress(40);
 
             JSONObject data = new JSONObject();
@@ -68,37 +65,46 @@ public class PostRequest extends AsyncTask<String, Integer, RequestResponse> {
                     e.printStackTrace();
                 }
             });
-
+            publishProgress(50);
 
             DataOutputStream writer = new DataOutputStream(connection.getOutputStream());
             writer.writeBytes(data.toString());
             writer.close();
+            publishProgress(60);
 
             connection.connect();
 
+            publishProgress(70);
             responseCode = connection.getResponseCode();
 
             connection.disconnect();
+            publishProgress(80);
 
-        } catch (IOException e) {
-            e.printStackTrace();
-            return requestResponse;
-        }
-            publishProgress(60);
-
-            RequestResponse requestResponse = new RequestResponse(
+            requestResponse = new RequestResponse(
                     client.getWebService(),
                     client.getAction(),
                     responseCode, null);
+            publishProgress(90);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         publishProgress(100);
         return requestResponse;
     }
 
-    private Action getAction() {
-        return action;
+    @Override
+    protected void onPostExecute(RequestResponse requestResponse) {
+        this.requestResponse = requestResponse;
+        if (requestResponse != null) {
+            responseEvent.onCompletion(requestResponse);
+        } else {
+            responseEvent.onFailure();
+        }
+        responseEvent.doFinally();
     }
 
-    public List<KeyObjectPair> getBody() {
-        return body;
+    private Action getAction() {
+        return action;
     }
 }
