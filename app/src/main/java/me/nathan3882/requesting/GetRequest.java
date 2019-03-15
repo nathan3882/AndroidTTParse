@@ -30,47 +30,28 @@ public class GetRequest extends AsyncTask<String, Integer, RequestResponse> {
         this.responseEvent = responseEvent;
     }
 
-    @Override
-    protected void onPostExecute(RequestResponse requestResponse) {
-        this.requestResponse = requestResponse;
-        if (requestResponse != null) {
-            responseEvent.onCompletion(requestResponse);
-        } else {
-            responseEvent.onFailure();
-        }
-    }
-
     //So many publish progresses to make it seem more of a gradual thing, not just instantly done
     @Override
     public RequestResponse doInBackground(String... params) {
-        publishProgress(5);
         String webService = client.getWebService() + parametersToRoute(getParameters(), false);
-        publishProgress(10);
         RequestResponse requestResponse = null;
-        publishProgress(15);
         try {
             System.out.println("trying with web service " + webService);
-            publishProgress(20);
             URL url = new URL(webService); //my localhost
-            publishProgress(25);
 
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            publishProgress(30);
             conn.setRequestMethod("GET");
-            publishProgress(35);
+            publishProgress(15);
             conn.connect();
             publishProgress(45);
             //Set data few lines down
 
             requestResponse = new RequestResponse(webService, getAction(), conn.getResponseCode(), null);
-            publishProgress(50);
 
             if (requestResponse.getResponseCode() == 404) return requestResponse;
-            publishProgress(55);
 
             BufferedReader in = new BufferedReader(
                     new InputStreamReader(conn.getInputStream()));
-            publishProgress(60);
             StringBuilder builder = new StringBuilder();
 
             in.lines().forEach(builder::append);
@@ -95,6 +76,17 @@ public class GetRequest extends AsyncTask<String, Integer, RequestResponse> {
         }
         publishProgress(100);
         return requestResponse;
+    }
+
+    @Override
+    protected void onPostExecute(RequestResponse requestResponse) {
+        this.requestResponse = requestResponse;
+        if (requestResponse != null) {
+            responseEvent.onCompletion(requestResponse);
+        } else {
+            responseEvent.onFailure();
+        }
+        responseEvent.doFinally();
     }
 
     private String parametersToRoute(List<String> params, boolean trailingSlash) {

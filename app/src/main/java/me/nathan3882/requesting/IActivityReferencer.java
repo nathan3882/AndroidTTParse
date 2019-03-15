@@ -10,6 +10,11 @@ public interface IActivityReferencer<T> {
     WeakReference<T> getWeakReference();
 
     @Nullable
+    default T getReferenceValue() {
+        return getWeakReference().get();
+    }
+
+    @Nullable
     default WeakReference<T> getFrom(Object object, Class clazz) {
         try {
             return new WeakReference<T>((T) object);
