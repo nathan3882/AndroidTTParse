@@ -1,35 +1,40 @@
 package me.nathan3882.androidttrainparse;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.Resources;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import me.nathan3882.activities.TimeDisplayActivity;
+import me.nathan3882.requesting.IActivityReferencer;
 import me.nathan3882.testingapp.R;
 
+import java.lang.ref.WeakReference;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-public class DayClass {
+public class DayClass implements IActivityReferencer<Activity> {
 
     private final DayOfWeek dayOfWeek;
 
-    private final TimeDisplayActivity activity;
+    private final WeakReference<Activity> activity;
     private String title;
 
-    public DayClass(TimeDisplayActivity activity, DayOfWeek dayOfWeek) {
+    public DayClass(WeakReference<Activity> activity, DayOfWeek dayOfWeek) {
         this.dayOfWeek = dayOfWeek;
         this.activity = activity;
     }
 
+    @Nullable
     public DayFragment newInstance(String headerNoHtml, List<LessonInfo> lessonInfo) {
         DayFragment dayFragment = new DayFragment();
         dayFragment.synchroniseLessonInfo(lessonInfo);
@@ -37,22 +42,31 @@ public class DayClass {
         Bundle bundle = new Bundle();
         bundle.putInt("dayOfWeekToShow", dayOfWeek.getValue());
         bundle.putString("headerNoHtml", headerNoHtml);
-        bundle.putStringArrayList("lessons", activity.getLessonNames());
-        dayFragment.setArguments(bundle);
-        return dayFragment;
+
+        if (getReferenceValue() != null) {
+
+            ArrayList<String> lessons = ((TimeDisplayActivity) getReferenceValue()).getUsersLocalLessons();
+
+            bundle.putStringArrayList(BundleName.LESSONS.asString(), lessons);
+            dayFragment.setArguments(bundle);
+            return dayFragment;
+        }else{
+            return null;
+        }
     }
 
     public DayOfWeek getDayOfWeek() {
         return dayOfWeek;
     }
 
-    private TimeDisplayActivity getActivity() {
-        return activity;
+    public String getPageTitle() {
+        Resources res = getWeakReference().get().getResources();
+        return res.getString(R.string.dayTitle).replace("{day}", Util.upperFirst(getDayOfWeek()));
     }
 
-    public String getPageTitle() {
-        Resources res = getActivity().getResources();
-        return res.getString(R.string.dayTitle).replace("{day}", Util.upperFirst(getDayOfWeek()));
+    @Override
+    public WeakReference<Activity> getWeakReference() {
+        return this.activity;
     }
 
     /**
@@ -84,17 +98,6 @@ public class DayClass {
             return header;
         }
 
-        @Override
-        public void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-            Bundle args = getArguments();
-            if (args != null) {
-                this.dayOfWeek = DayOfWeek.of(getArguments().getInt("dayOfWeekToShow"));
-                this.header = args.getString("headerNoHtml");
-                this.lessonsBeingTaught = args.getStringArrayList("lessons");
-            }
-        }
-
         public DayOfWeek getDayOfWeekToShow() {
             return this.dayOfWeek;
         }
@@ -105,22 +108,6 @@ public class DayClass {
 
         public List<LessonInfo> getLessonInfo() {
             return lessonInfo;
-        }
-
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                                 Bundle savedInstanceState) {
-            View view = inflater.inflate(R.layout.fragment_day, container, false);
-
-            TextView dayFragHeader = view.findViewById(R.id.dayFragHeader);
-            dayFragHeader.setText(Util.html("<html>" + getHeader() + "</html>"));
-
-            StringBuilder toDisplay = getStringToDisplay(getLessonInfo());
-
-            TextView actualDisplay = view.findViewById(R.id.lessonDisplay);
-            actualDisplay.setText(Util.html(toDisplay.toString()));
-
-            return view;
         }
 
         // TODO: Rename method, update argument and hook method into UI event
@@ -139,6 +126,33 @@ public class DayClass {
                 throw new RuntimeException(context.toString()
                         + " must implement OnFragmentInteractionListener");
             }
+        }
+
+        @Override
+        public void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            Bundle args = getArguments();
+            if (args != null) {
+                this.dayOfWeek = DayOfWeek.of(getArguments().getInt("dayOfWeekToShow"));
+                this.header = args.getString("headerNoHtml");
+                this.lessonsBeingTaught = args.getStringArrayList("lessons");
+            }
+        }
+
+        @Override
+        public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                                 Bundle savedInstanceState) {
+            View view = inflater.inflate(R.layout.fragment_day, container, false);
+
+            TextView dayFragHeader = view.findViewById(R.id.dayFragHeader);
+            dayFragHeader.setText(Util.html("<html>" + getHeader() + "</html>"));
+
+            StringBuilder toDisplay = getStringToDisplay(getLessonInfo());
+
+            TextView actualDisplay = view.findViewById(R.id.lessonDisplay);
+            actualDisplay.setText(Util.html(toDisplay.toString()));
+
+            return view;
         }
 
         @Override

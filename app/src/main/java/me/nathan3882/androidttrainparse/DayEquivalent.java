@@ -1,24 +1,22 @@
 package me.nathan3882.androidttrainparse;
 
-import android.support.v7.app.AppCompatActivity;
-import me.nathan3882.activities.TimeDisplayActivity;
+import android.app.Activity;
+import me.nathan3882.requesting.IActivityReferencer;
 
+import java.lang.ref.WeakReference;
 import java.time.DayOfWeek;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DayEquivalent {
-
-    private final int dayInt;
-
-    private final DayOfWeek dayOfWeek;
-
-    private final TimeDisplayActivity timeDisplayActivity;
-    private DayClass dayClass;
+public class DayEquivalent implements IActivityReferencer<Activity> {
 
     private static Map<DayOfWeek, DayClass.DayFragment> previouslyStoredEquivalents = new HashMap<>();
+    private final int dayInt;
+    private final DayOfWeek dayOfWeek;
+    private final WeakReference<Activity> timeDisplayActivity;
+    private DayClass dayClass;
 
-    public DayEquivalent(TimeDisplayActivity timeDisplayActivity, int dayInt) {
+    public DayEquivalent(WeakReference<Activity> timeDisplayActivity, int dayInt) {
         this.dayInt = dayInt;
         this.dayOfWeek = DayOfWeek.of(dayInt);
         this.timeDisplayActivity = timeDisplayActivity;
@@ -29,9 +27,11 @@ public class DayEquivalent {
         return previouslyStoredEquivalents;
     }
 
+
     public static void addToPrevious(DayOfWeek key, DayClass.DayFragment value) {
         DayEquivalent.previouslyStoredEquivalents.put(key, value);
     }
+
 
     public static DayClass.DayFragment getPreviouslyStoredEquivalent(DayOfWeek equiv) {
         return getPreviouslyStoredEquivalents().get(equiv);
@@ -49,14 +49,8 @@ public class DayEquivalent {
         return dayOfWeek;
     }
 
-    public static DayEquivalent of(TimeDisplayActivity timeDisplayActivity, DayOfWeek day) {
-        return new DayEquivalent(timeDisplayActivity, day.getValue());
-    }
-    public static DayEquivalent of(TimeDisplayActivity timeDisplayActivity, String day) {
-        return new DayEquivalent(timeDisplayActivity, DayOfWeek.valueOf(day.toUpperCase()).getValue());
-    }
-
-    public AppCompatActivity getTimeDisplayActivity() {
-        return timeDisplayActivity;
+    @Override
+    public WeakReference<Activity> getWeakReference() {
+        return this.timeDisplayActivity;
     }
 }

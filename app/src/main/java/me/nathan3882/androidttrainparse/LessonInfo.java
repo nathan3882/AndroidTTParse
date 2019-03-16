@@ -48,6 +48,30 @@ public class LessonInfo {
         }
     }
 
+    public LinkedList<LocalTime> getStartTimes(String lesson) {
+        return this.orderedSubjectStartTimes.get(lesson);
+    }
+
+    public LinkedList<LocalTime> getFinishTimes(String lesson) {
+        return this.orderedSubjectFinishTimes.get(lesson);
+    }
+
+    public LinkedList<String> getLessons() {
+        return this.orderedLessons;
+    }
+
+    public DayOfWeek getDayOfWeek() {
+        return this.dayOfWeek;
+    }
+
+    public boolean isParsedSuccessfully() {
+        return parsedSuccessfully;
+    }
+
+    public void setParsedSuccessfully(boolean parsedSuccessfully) {
+        this.parsedSuccessfully = parsedSuccessfully;
+    }
+
     private void storeStartEndTimes(String subject, List<String> words, Map<String, List<String>> subjectAndBounds, Map<String, LinkedList<LocalTime>> orderedSubjectStartTimes, Map<String, LinkedList<LocalTime>> orderedSubjectFinishTimes) {
         int previousLowerBound = -1;
         String[] split = subject.split(" ");
@@ -108,7 +132,7 @@ public class LessonInfo {
 
                         endBoundIndex = lowerBound + (split.size() - 1);
 
-                        String boundString = String.valueOf(lowerBound + ", " + endBoundIndex);
+                        String boundString = lowerBound + ", " + endBoundIndex;
 
                         List<String> bounds = subjectAndBounds.containsKey(aLesson) ? subjectAndBounds.get(aLesson) : new ArrayList<>(Arrays.asList(boundString));
                         if (subjectAndBounds.containsKey(aLesson)) {
@@ -117,7 +141,7 @@ public class LessonInfo {
                         subjectAndBounds.put(aLesson, bounds);
                     }
                 } else if (aLesson.equals(currentWord)) {
-                    String boundString = String.valueOf(i + ", " + i);
+                    String boundString = i + ", " + i;
                     List<String> bounds = subjectAndBounds.containsKey(aLesson) ? subjectAndBounds.get(aLesson) : new ArrayList<>(Arrays.asList(boundString));
                     if (subjectAndBounds.containsKey(aLesson)) {
                         bounds.add(boundString);
@@ -132,29 +156,5 @@ public class LessonInfo {
 
     private int prs(String s) {
         return Integer.parseInt(s);
-    }
-
-    public LinkedList<LocalTime> getStartTimes(String lesson) {
-        return this.orderedSubjectStartTimes.get(lesson);
-    }
-
-    public LinkedList<LocalTime> getFinishTimes(String lesson) {
-        return this.orderedSubjectFinishTimes.get(lesson);
-    }
-
-    public LinkedList<String> getLessons() {
-        return this.orderedLessons;
-    }
-
-    public DayOfWeek getDayOfWeek() {
-        return this.dayOfWeek;
-    }
-
-    public void setParsedSuccessfully(boolean parsedSuccessfully) {
-        this.parsedSuccessfully = parsedSuccessfully;
-    }
-
-    public boolean isParsedSuccessfully() {
-        return parsedSuccessfully;
     }
 }

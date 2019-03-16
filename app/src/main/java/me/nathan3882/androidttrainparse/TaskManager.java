@@ -11,10 +11,6 @@ public class TaskManager extends TimerTask {
         setTimer(timer);
     }
 
-    @Override
-    public void run() {
-    }
-
     public void runTaskSynchronously(TimerTask task, long delay, long period) {
         timer.scheduleAtFixedRate(task, delay, period);
     }
@@ -26,5 +22,9 @@ public class TaskManager extends TimerTask {
 
     public void terminate() {
         timer.cancel();
+    }
+
+    @Override
+    public void run() {
     }
 }
