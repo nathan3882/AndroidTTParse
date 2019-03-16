@@ -1,18 +1,20 @@
 <resources>
     <string name="app_name">TestingApp</string>
     <string name="action_settings">Settings</string>
-    <string name="empty_email">Enter an email</string>
+    <string name="empty_email">Enter your email</string>
     <string name="noInternet">You don\'t have internet</string>
     <string name="internetRequired">Internet access required</string>
     <string name="internetNoDatabaseCon">You have internet, but database can\'t be reached</string>
-    <string name="internetAndDatabaseConnected">Internet and a database connection has been established</string>
+    <string name="internetAndDatabaseConnected">Internet connection has been established</string>
     <string name="sixDigitPwHelper">Enter 6 digit passcode below!</string>
     <string name="loginText">Click to login!</string>
     <string name="title_activity_lesson_select">LessonSelectActivity</string>
-    <string name="lessonNameHelp">Enter your lessons here for example Computer Science, Biology</string>
+    <string name="lessonNameHelp"></string>
     <string name="advance">Advance</string>
     <string name="dayTitle">Lessons for {day}:</string>
+    <string name="emailHelper">Enter email below</string>
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="loginBelow">Login below using your previously registered account!</string>
 </resources>
