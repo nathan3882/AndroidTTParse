@@ -1,14 +1,14 @@
 package me.nathan3882.androidttrainparse;
 
-import me.nathan3882.requestsResponses.GetRequest;
+import me.nathan3882.requesting.Action;
 
 public class Client {
 
-    private GetRequest.Type action;
+    private Action action;
 
     private String webService;
 
-    public Client(String webService, GetRequest.Type action) {
+    public Client(String webService, Action action) {
         this.action = action;
         this.webService = webService + action.getWebServiceAction(false);
     }
@@ -17,7 +17,7 @@ public class Client {
         return webService;
     }
 
-    public GetRequest.Type getAction() {
+    public Action getAction() {
         return this.action;
     }
 }

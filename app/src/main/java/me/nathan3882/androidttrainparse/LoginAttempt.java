@@ -1,7 +1,7 @@
 package me.nathan3882.androidttrainparse;
 
 import me.nathan3882.activities.MainActivity;
-import me.nathan3882.responseData.UserdataRequestResponseData;
+import me.nathan3882.responding.UserdataRequestResponseData;
 
 public class LoginAttempt {
 
@@ -37,15 +37,6 @@ public class LoginAttempt {
         return this.wasSuccessful;
     }
 
-    private void setSuccessful(boolean wasSuccessful, String unsuccessfulReason) {
-        setSuccessful(wasSuccessful);
-        setUnsuccessfulReason(unsuccessfulReason);
-    }
-
-    private void setSuccessful(boolean wasSuccessful) {
-        this.wasSuccessful = wasSuccessful;
-    }
-
     public String getUnsuccessfulReason() {
         return this.unsuccessfulReason;
     }
@@ -64,5 +55,14 @@ public class LoginAttempt {
 
     public String getGottenDBBytes() {
         return gottenDBBytes;
+    }
+
+    private void setSuccessful(boolean wasSuccessful, String unsuccessfulReason) {
+        setSuccessful(wasSuccessful);
+        setUnsuccessfulReason(unsuccessfulReason);
+    }
+
+    private void setSuccessful(boolean wasSuccessful) {
+        this.wasSuccessful = wasSuccessful;
     }
 }

@@ -115,12 +115,6 @@ public class LessonSelectActivity extends AbstractPostLoginActivity implements I
         toTrainsButton.setOnClickListener(getToTrainsListener());
     }
 
-    private View.OnClickListener getToTrainsListener() {
-        return view -> {
-            MainActivity.startTimeDisplayActivity(getWeakReference(), this, getUser(), true);
-        };
-    }
-
     @Override
     public User getUser() {
         return user;
@@ -142,11 +136,6 @@ public class LessonSelectActivity extends AbstractPostLoginActivity implements I
     }
 
     @Override
-    public void onBackPressed() { //prevent user from going back to the login screen }
-
-    }
-
-    @Override
     public WeakReference<Activity> getWeakReference() {
         return weakReference;
     }
@@ -154,6 +143,12 @@ public class LessonSelectActivity extends AbstractPostLoginActivity implements I
     @Override
     public int getProgressBarRid() {
         return this.progressBar.getId();
+    }
+
+    private View.OnClickListener getToTrainsListener() {
+        return view -> {
+            MainActivity.startTimeDisplayActivity(getWeakReference(), this, getUser(), true);
+        };
     }
 
     private View.OnClickListener getAddRemoveListener(boolean addingLesson) {

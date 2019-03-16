@@ -1,4 +1,4 @@
-package me.nathan3882.data;
+package me.nathan3882.androidttrainparse;
 
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
@@ -91,10 +91,6 @@ public class Encryption {
         this.salt = originalSalt;
     }
 
-    private String getOriginalPassword() {
-        return this.originalPassword;
-    }
-
     public boolean authenticateWith(byte[] anotherEncryption, byte[] anotherSalt) {
         // Encrypts password using same salt that originalPassword pw used
         return Arrays.equals(anotherEncryption, getOriginalEncrypted());
@@ -102,5 +98,9 @@ public class Encryption {
 
     public byte[] getOriginalEncrypted() {
         return this.originalEncrypted;
+    }
+
+    private String getOriginalPassword() {
+        return this.originalPassword;
     }
 }
