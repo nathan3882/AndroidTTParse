@@ -6,6 +6,7 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.view.View;
 import android.widget.*;
+import me.nathan3882.androidttrainparse.BundleName;
 import me.nathan3882.androidttrainparse.User;
 import me.nathan3882.androidttrainparse.Util;
 import me.nathan3882.requesting.IActivityReferencer;
@@ -14,7 +15,6 @@ import me.nathan3882.responding.ResponseEvent;
 import me.nathan3882.testingapp.R;
 
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -71,13 +71,6 @@ public class LessonSelectActivity extends AbstractPostLoginActivity implements I
     }
 
     @Override
-    protected void onRestoreInstanceState(Bundle savedInstanceState) {
-        //called after the activity is reopened after being killed by system to free resources
-        System.out.println("le email = " + savedInstanceState.getString("email"));
-        super.onRestoreInstanceState(savedInstanceState);
-    }
-
-    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_lesson_select);
@@ -93,18 +86,17 @@ public class LessonSelectActivity extends AbstractPostLoginActivity implements I
         this.addLessonButton = findViewById(R.id.addLessonButton);
         this.removeLessonButton = findViewById(R.id.removeLessonButton);
 
-        this.bundle = getIntent().getExtras();
-
-        initUser(bundle);
-
-        ArrayList<String> bundlesLessons = null;
+        setInitialBundle(getIntent().getExtras(), savedInstanceState);
 
         if (bundle != null) { //make this a define user func in super class
-            setUpdating(bundle.getBoolean("isUpdating"));
-            bundlesLessons = bundle.getStringArrayList("lessons");
-        }
+            setUpdating(bundle.getBoolean(BundleName.IS_UPDATING.asString()));
+            if (bundle.getBoolean(BundleName.USER_LESSONS_POPULATED.asString())) {
+                initUser(bundle, true);
+            }else{
+                initUser(bundle, false);
+            }
 
-        getUser().synchronise(bundlesLessons);
+        }
 
         refreshHeaderText();
 
@@ -113,6 +105,12 @@ public class LessonSelectActivity extends AbstractPostLoginActivity implements I
         removeLessonButton.setOnClickListener(getAddRemoveListener(false));
 
         toTrainsButton.setOnClickListener(getToTrainsListener());
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putAll(getInitialBundle());
+        super.onSaveInstanceState(outState);
     }
 
     @Override
@@ -131,8 +129,12 @@ public class LessonSelectActivity extends AbstractPostLoginActivity implements I
     }
 
     @Override
-    public void setInitialBundle(Bundle bundle) {
-        this.bundle = bundle;
+    public void setInitialBundle(Bundle bundle, Bundle savedInstanceState) {
+        if (savedInstanceState == null) {
+            this.bundle = bundle;
+        }else{
+            this.bundle = savedInstanceState;
+        }
     }
 
     @Override

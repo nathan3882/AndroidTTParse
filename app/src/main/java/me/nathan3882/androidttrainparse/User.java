@@ -4,7 +4,7 @@ import android.app.Activity;
 import android.support.annotation.Nullable;
 import me.nathan3882.activities.ProgressBarable;
 import me.nathan3882.requesting.Action;
-import me.nathan3882.requesting.KeyObjectPair;
+import me.nathan3882.requesting.Pair;
 import me.nathan3882.requesting.PostRequest;
 import me.nathan3882.requesting.ProgressedPostRequest;
 import me.nathan3882.responding.ResponseEvent;
@@ -30,7 +30,6 @@ public class User implements ManipulableUser {
 
     public static User fromPrimitive(String userEmail, String homeCrs) {
         User user = new User(userEmail, homeCrs);
-        user.synchroniseWithDatabase();
         return user;
     }
 
@@ -60,7 +59,7 @@ public class User implements ManipulableUser {
                                     ProgressBarable barable, ResponseEvent event) {
         Client client = getNewAddLessonClient();
 
-        List<KeyObjectPair> body = getBodyFromLessonName(lesson);
+        List<Pair.KeyObjectPair> body = getBodyFromLessonName(lesson);
 
         new ProgressedPostRequest(reference, barable.getProgressBarRid(), client, "/" + getUserEmail() + Util.PARAMS,
                 body, event).execute();
@@ -70,7 +69,7 @@ public class User implements ManipulableUser {
     public void addLesson(String lesson, ResponseEvent event) {
         Client client = getNewAddLessonClient();
 
-        List<KeyObjectPair> body = getBodyFromLessonName(lesson);
+        List<Pair.KeyObjectPair> body = getBodyFromLessonName(lesson);
 
         new PostRequest(client, "/" + getUserEmail() + Util.PARAMS, body, event).execute();
     }
@@ -79,7 +78,7 @@ public class User implements ManipulableUser {
     public void removeLesson(String lesson, ResponseEvent event) {
         Client client = getNewRemoveLessonClient();
 
-        List<KeyObjectPair> body = getBodyFromLessonName(lesson);
+        List<Pair.KeyObjectPair> body = getBodyFromLessonName(lesson);
 
         new PostRequest(client, "/" + getUserEmail() + Util.PARAMS, body, event).execute();
     }
@@ -89,19 +88,19 @@ public class User implements ManipulableUser {
                                        ProgressBarable barable, ResponseEvent event) {
         Client client = getNewRemoveLessonClient();
 
-        List<KeyObjectPair> body = getBodyFromLessonName(lesson);
+        List<Pair.KeyObjectPair> body = getBodyFromLessonName(lesson);
 
         new ProgressedPostRequest(reference, barable.getProgressBarRid(), client, "/" + getUserEmail() + Util.PARAMS,
                 body, event).execute();
     }
 
     @Override
-    public void synchroniseWithDatabase() {
+    public void synchroniseWithDatabase(ResponseEvent event) {
 
     }
 
-    private List<KeyObjectPair> getBodyFromLessonName(String lesson) {
-        return Collections.singletonList(new KeyObjectPair("lessonName", lesson));
+    private List<Pair.KeyObjectPair> getBodyFromLessonName(String lesson) {
+        return Collections.singletonList(new Pair().new KeyObjectPair("lessonName", lesson));
     }
 
     private Client getNewRemoveLessonClient() {

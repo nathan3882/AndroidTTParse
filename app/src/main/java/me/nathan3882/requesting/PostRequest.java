@@ -15,7 +15,7 @@ import java.util.List;
 
 public class PostRequest extends AsyncTask<String, Integer, RequestResponse> {
 
-    private final List<KeyObjectPair> body;
+    private final List<Pair.KeyObjectPair> body;
     private final String parameter;
     private Client client;
     private Action action;
@@ -23,7 +23,7 @@ public class PostRequest extends AsyncTask<String, Integer, RequestResponse> {
     private ResponseEvent responseEvent;
     private int progress = 0;
 
-    public PostRequest(Client client, String parameter, List<KeyObjectPair> body, ResponseEvent responseEvent) {
+    public PostRequest(Client client, String parameter, List<Pair.KeyObjectPair> body, ResponseEvent responseEvent) {
         this.action = client.getAction();
         this.parameter = parameter;
         this.body = body;
@@ -31,7 +31,7 @@ public class PostRequest extends AsyncTask<String, Integer, RequestResponse> {
         this.responseEvent = responseEvent;
     }
 
-    public List<KeyObjectPair> getBody() {
+    public List<Pair.KeyObjectPair> getBody() {
         return body;
     }
 

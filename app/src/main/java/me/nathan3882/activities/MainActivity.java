@@ -12,10 +12,7 @@ import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.*;
-import me.nathan3882.androidttrainparse.Client;
-import me.nathan3882.androidttrainparse.LoginAttempt;
-import me.nathan3882.androidttrainparse.User;
-import me.nathan3882.androidttrainparse.Util;
+import me.nathan3882.androidttrainparse.*;
 import me.nathan3882.requesting.Action;
 import me.nathan3882.requesting.IActivityReferencer;
 import me.nathan3882.requesting.ProgressedGetRequest;
@@ -23,24 +20,28 @@ import me.nathan3882.responding.*;
 import me.nathan3882.testingapp.R;
 
 import java.lang.ref.WeakReference;
+import java.time.DayOfWeek;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity implements IActivityReferencer<Activity>, ProgressBarable {
 
+    private static Calendar calendar;
     private MainActivity mainActivity;
     private WeakReference<Activity> weakReference;
     private Switch addLessonInfoButton;
     private ProgressBar mainActivityProgressBar;
 
     /**
-     * @param useLocallyStored only set to true if User#synchronise has been called
+     * @param userLessonsPopulated only set to true if User#getLocalLessons() is populated
      */
     public static void startTimeDisplayActivity(WeakReference<Activity> reference,
-                                                ProgressBarable barable, User user, boolean useLocallyStored) {
-        if (useLocallyStored) {
-            startIntent(user.getLocalLessons(), reference.get(), user);
+                                                ProgressBarable barable, User user, boolean userLessonsPopulated) {
+        if (userLessonsPopulated) {
+            startTimeDisplayIntent(user.getLocalLessons(), reference.get(), user);
         } else {
             Client lessonNamesClient = new Client(Util.DEFAULT_TTRAINPARSE, Action.GET_USER_LESSON_NAMES);
 
@@ -57,33 +58,57 @@ public class MainActivity extends AppCompatActivity implements IActivityReferenc
                         ArrayList<String> lessonNames = lessonNameData.getLessonNames();
                         Activity activity = reference.get();
                         if (activity != null) {
-                            startIntent(lessonNames, activity, user);
+                            startTimeDisplayIntent(lessonNames, activity, user);
+                        } else {
+                            onFailure();
                         }
                     }
                 }
 
                 @Override
                 public void onFailure() {
-
+                    Toast.makeText(reference.get(), "Sorry, lesson times could not be shown", Toast.LENGTH_LONG).show();
                 }
             }).execute();
         }
     }
 
-    private static void startIntent(ArrayList<String> lessonNames, Activity activity, User user) {
+    private static void startTimeDisplayIntent(ArrayList<String> lessonNames, Activity activity, User user) {
         Intent toTimeDisplay = new Intent(activity, TimeDisplayActivity.class);
-        toTimeDisplay.putExtra("email", user.getUserEmail());
-        toTimeDisplay.putExtra("homeCrs", user.getHomeCrs());
-        toTimeDisplay.putStringArrayListExtra("lessons", lessonNames);
+        toTimeDisplay.putExtra(BundleName.EMAIL.asString(), user.getUserEmail());
+        toTimeDisplay.putExtra(BundleName.HOME_CRS.asString(), user.getHomeCrs());
+        toTimeDisplay.putExtra(BundleName.DAYS_TO_SHOW.asString(), getDaysToShow(getCalendar().get(Calendar.DAY_OF_WEEK)));
+        toTimeDisplay.putStringArrayListExtra(BundleName.LESSONS.asString(), lessonNames);
+        toTimeDisplay.putExtra(BundleName.USER_LESSONS_POPULATED.asString(), true);
         activity.startActivity(toTimeDisplay);
+    }
+
+    public static Calendar getCalendar() {
+        return calendar;
+    }
+
+    private static int[] getDaysToShow(int currentDay) {
+        int[] showThese = new int[2];
+        // TODO Allow user configuration
+        if (currentDay == 6 || currentDay == 7) { //Weekend, show monday
+            showThese[0] = java.time.DayOfWeek.MONDAY.getValue();
+            showThese[1] = java.time.DayOfWeek.TUESDAY.getValue();
+        } else if (currentDay == 5) { //Friday, show friday and monday
+            showThese[0] = DayOfWeek.FRIDAY.getValue();
+            showThese[1] = DayOfWeek.MONDAY.getValue();
+        } else { //Show today and tomorrow
+            showThese[0] = DayOfWeek.of(currentDay).getValue();
+            showThese[1] = DayOfWeek.of(currentDay + 1).getValue();
+        }
+        return showThese;
     }
 
     public static void startLessonSelect(WeakReference<Activity> reference, ProgressBarable barable, boolean updating, UserdataRequestResponseData request) {
         Intent msgToLessonSelectActivity = new Intent(reference.get(), LessonSelectActivity.class);
         Bundle bundleForLessonSelect = new Bundle();
-        bundleForLessonSelect.putBoolean("isUpdating", updating);
-        bundleForLessonSelect.putString("email", request.getUserEmail());
-        bundleForLessonSelect.putString("homeCrs", request.getHomeCrs());
+        bundleForLessonSelect.putBoolean(BundleName.IS_UPDATING.asString(), updating);
+        bundleForLessonSelect.putString(BundleName.EMAIL.asString(), request.getUserEmail());
+        bundleForLessonSelect.putString(BundleName.HOME_CRS.asString(), request.getHomeCrs());
 
         Client lessonNamesClient = new Client(Util.DEFAULT_TTRAINPARSE, Action.GET_USER_LESSON_NAMES);
         ArrayList<String> toBundle = new ArrayList<>();
@@ -118,7 +143,7 @@ public class MainActivity extends AppCompatActivity implements IActivityReferenc
     }
 
     private static void finaliseLessonSelect(Bundle bundleForLessonSelect, ArrayList<String> toBundle, Intent msgToLessonSelectActivity, WeakReference<Activity> reference) {
-        bundleForLessonSelect.putStringArrayList("lessons", toBundle);
+        bundleForLessonSelect.putStringArrayList(BundleName.LESSONS.asString(), toBundle);
 
         msgToLessonSelectActivity.putExtras(bundleForLessonSelect);
 
@@ -138,6 +163,8 @@ public class MainActivity extends AppCompatActivity implements IActivityReferenc
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
         this.mainActivityProgressBar = findViewById(R.id.mainActivityProgressBar);
 
         this.mainActivity = this;

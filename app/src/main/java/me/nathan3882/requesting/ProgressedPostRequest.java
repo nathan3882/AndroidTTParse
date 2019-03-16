@@ -19,7 +19,7 @@ public class ProgressedPostRequest extends PostRequest implements ProgressBarabl
     private final Client client;
 
     public ProgressedPostRequest(WeakReference<Activity> weakReference, int barId,
-                                 Client client, String parameter, List<KeyObjectPair> body, ResponseEvent responseEvent) {
+                                 Client client, String parameter, List<Pair.KeyObjectPair> body, ResponseEvent responseEvent) {
         super(client, parameter, body, responseEvent);
         this.barId = barId;
         this.client = client;

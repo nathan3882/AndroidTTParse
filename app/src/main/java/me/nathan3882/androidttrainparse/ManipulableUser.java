@@ -19,6 +19,6 @@ public interface ManipulableUser {
     void removeLessonProgressed(String lesson, WeakReference<Activity> reference,
                                 ProgressBarable barable, ResponseEvent event);
 
-    void synchroniseWithDatabase();
+    void synchroniseWithDatabase(ResponseEvent event);
 
 }
