@@ -3,21 +3,29 @@ package me.nathan3882.activities;
 import android.app.Activity;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.widget.ProgressBar;
 import me.nathan3882.androidttrainparse.*;
+import me.nathan3882.requesting.Action;
+import me.nathan3882.requesting.Pair;
+import me.nathan3882.requesting.ProgressedGetRequest;
+import me.nathan3882.responding.OcrRequestResponseData;
+import me.nathan3882.responding.RequestResponse;
+import me.nathan3882.responding.RequestResponseData;
+import me.nathan3882.responding.ResponseEvent;
 import me.nathan3882.testingapp.R;
 
 import java.lang.ref.WeakReference;
 import java.time.DayOfWeek;
 import java.util.*;
 
-public class TimeDisplayActivity extends AbstractPostLoginActivity implements DayClass.DayFragment.OnFragmentInteractionListener {
-
-    private final TimeDisplayActivity timeDisplayActivity = this;
+public class TimeDisplayActivity extends AbstractPostLoginActivity
+        implements DayFragmentFactory.DayFragment.OnFragmentInteractionListener, ProgressBarable {
 
     private Map<DayOfWeek, List<LessonInfo>> allDaysLessonInfo = new HashMap<>();
     /**
@@ -30,15 +38,25 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity implements Da
      * The ViewPager that will host the section contents.
      */
     private ViewPager pager;
+
     private String email;
-    private DayOfWeek[] daysToShow = new DayOfWeek[2];
+
+    private DayOfWeek[] daysToShow = new DayOfWeek[5];
+
     private User user;
+
     private Bundle bundle;
+    private WeakReference<Activity> weakReference;
+    private ProgressBar progressBar;
 
     public DayOfWeek[] getDaysToShow() {
         return daysToShow;
     }
 
+    @Override
+    public int getProgressBarRid() {
+        return this.progressBar.getId();
+    }
 
     /**
      * BundleName.EMAIL
@@ -46,6 +64,7 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity implements Da
      * BundleName.LESSONS
      * BundleName.DAYS_TO_SHOW
      * BundleName.USER_LESSONS_POPULATED
+     * BundleName.MONDAY tues wed etc
      *
      * @param savedInstanceState
      */
@@ -54,28 +73,35 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity implements Da
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_time_display);
 
+        this.weakReference = new WeakReference<>(this);
+
         setInitialBundle(getIntent().getExtras(), savedInstanceState);
 
+        this.progressBar = findViewById(R.id.timeDisplayProgressBar);
 
-        if (getInitialBundle().getBoolean(BundleName.USER_LESSONS_POPULATED.asString())) {
-            initUser(getInitialBundle(), true);
-        }
-
-        int[] stringDays = bundle.getIntArray(BundleName.DAYS_TO_SHOW.asString()); //From lessonSelectActivity
+        int[] stringDays = getInitialBundle().getIntArray(BundleName.DAYS_TO_SHOW.asString()); //From lessonSelectActivity
 
         for (int i = 0; i < stringDays.length; i++) {
             DayOfWeek dayOfWeekVersion = DayOfWeek.of(stringDays[i]);
             daysToShow[i] = dayOfWeekVersion;
         }
+        if (getInitialBundle().getBoolean(BundleName.USER_LESSONS_POPULATED.asString())) {
+            System.out.println(getInitialBundle().getStringArrayList(BundleName.LESSONS.asString()));
+            initUser(getInitialBundle(), true);
+            doOcrForAllUsersDays();
+        } else {
+            Pair pair = new Pair();
+            Pair.BooleanResponseEventPair eventPair = pair.new BooleanResponseEventPair(Boolean.TRUE, new ResponseEvent() {
+                @Override
+                public void doFinally() {
+                    doOcrForAllUsersDays();
+                }
+            });
 
-        for (DayOfWeek dayToShow : getDaysToShow()) {
-            allDaysLessonInfo.put(dayToShow, defineLessonInformation(dayToShow));
+            initUser(getInitialBundle(), false, eventPair);
+            //no lessons, must init the user for this instance, and then initiatePagers after the
         }
 
-        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
-        // Set up the ViewPager with the sections adapter.
-        pager = findViewById(R.id.viewPager);
-        pager.setAdapter(mSectionsPagerAdapter);
     }
 
     @Override
@@ -85,8 +111,13 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity implements Da
     }
 
     @Override
+    public WeakReference<Activity> getWeakReference() {
+        return this.weakReference;
+    }
+
+    @Override
     public User getUser() {
-        return null;
+        return this.user;
     }
 
     @Override
@@ -113,60 +144,221 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity implements Da
 
     }
 
-    @Override
-    public WeakReference<Activity> getWeakReference() {
-        return null;
+    private void doOcrForAllUsersDays() {
+        DayOfWeek[] daysToShow = getDaysToShow();
+        int daysToShowLength = daysToShow.length;
+        for (int i = 0; i < daysToShowLength; i++) {
+            DayOfWeek dayToShow = daysToShow[i];
+            System.out.println("i = " + i + " day to show = " + dayToShow.name());
+
+            boolean lastExecution = i == daysToShowLength - 1;
+
+            doOcr(dayToShow, new ReturnEvent() {
+                @Override
+                public void registerReturn() {
+                    if (lastExecution) {
+                        initiatePagers();
+                        System.out.println("initiate pagers" +
+                                "");
+                    }
+                }
+            });
+        }
     }
 
-    private Map<DayOfWeek, List<LessonInfo>> getAllDaysLessonInfo() {
-        return allDaysLessonInfo;
+    private boolean doOcr(DayOfWeek dayToShow, ReturnEvent event) {
+        boolean hasLessonInfo = false;
+        boolean hasOcrStored = false;
+        BundleName daysBundleName = BundleName.getByValue(dayToShow.name());
+        if (daysBundleName != null) {
+            String key = daysBundleName.name();
+            hasOcrStored = getInitialBundle().containsKey(key);
+            if (hasOcrStored) {
+                System.out.println("has ocr stored locally");
+                String storedOcr = getInitialBundle().getString(key);
+                if (storedOcr != null && !allDaysLessonInfo.containsKey(dayToShow)) {
+                    //Has ocr in the bundle from the fetchAndStoreOcr function, but not in the all days lesson info
+                    List<LessonInfo> lessonInfos = defineLessonInfo(dayToShow, storedOcr);
+                    if (lessonInfos.size() != 0 && !storedOcr.equalsIgnoreCase("null")) {
+                            System.out.println("66666");
+                            allDaysLessonInfo.put(dayToShow, lessonInfos);
+                            getInitialBundle().putString(daysBundleName.asString(), storedOcr);
+                            hasLessonInfo = true;
+                        }
+                    System.out.println("22222");
+                }
+            }
+        }
+        if (!hasOcrStored) {
+            System.out.println("33333");
+
+            fetchAndStoreOcr(dayToShow, new ResponseEvent() {
+                @Override
+                public void onCompletion(@NonNull RequestResponse requestResponse) {
+                    RequestResponseData data = requestResponse.getData();
+                    System.out.println("44444");
+
+                    if (data instanceof OcrRequestResponseData) {
+                        System.out.println("55555");
+                        OcrRequestResponseData ocrRequestResponseData = (OcrRequestResponseData) data;
+
+                        String fetchedDepletedOcrString = ocrRequestResponseData.getDepletedOcrString();
+
+                        List<LessonInfo> lessonInfos = defineLessonInfo(dayToShow, fetchedDepletedOcrString);
+                        System.out.println("The size for " + lessonInfos.size() + " day = " + dayToShow.name());
+                        if (lessonInfos.size() != 0 && !fetchedDepletedOcrString.equalsIgnoreCase("null")) {
+                            if (daysBundleName != null) {
+                                System.out.println("66666");
+                                allDaysLessonInfo.put(dayToShow, lessonInfos);
+                                getInitialBundle().putString(daysBundleName.asString(), fetchedDepletedOcrString);
+                            }
+                        }
+                    }
+                    event.registerReturn();
+                }
+            });
+        } else {
+            event.registerReturn();
+        }
+
+        return hasLessonInfo;
     }
 
-    private List<LessonInfo> defineLessonInformation(DayOfWeek day) {
+    private void initiatePagers() {
+        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
+        // Set up the ViewPager with the sections adapter.
+        pager = findViewById(R.id.viewPager);
+        pager.setAdapter(mSectionsPagerAdapter);
+    }
+
+    private List<LessonInfo> defineLessonInfo(DayOfWeek day, String depletedOcrText) {
         List<LessonInfo> info = new LinkedList<>();
 
-        String dayName = day.name();
-
-        String depletedOcrText = "Wednesday Business studies 14:10 - 15:15 Business studies 15:15 - 16:20";
         List<String> words = new LinkedList<>(Arrays.asList(depletedOcrText.split(" ")));
 
         info.add(new LessonInfo(getUsersLocalLessons(), words, day));
         return info;
     }
 
-public class SectionsPagerAdapter extends FragmentPagerAdapter {
-
-    public SectionsPagerAdapter(FragmentManager fm) {
-        super(fm);
+    private void fetchAndStoreOcr(DayOfWeek dayToShow, ResponseEvent event) {
+        Client client = new Client(Util.DEFAULT_TTRAINPARSE, Action.GET_OCR_STRING);
+        new ProgressedGetRequest(getWeakReference(), getProgressBarRid(), client,
+                ("/" + getUsersEmail() + "/" + dayToShow.name() + Util.PARAMS), event).execute();
     }
 
-    @Override
-    public Fragment getItem(int position) {
-        int dayInt = ++position; //0 is monday, 1 is tuesday etc
-        DayEquivalent dEquiv = new DayEquivalent(getWeakReference(), dayInt);
-        DayOfWeek dayOfWeek = dEquiv.getEquivalent();
+    private Map<DayOfWeek, List<LessonInfo>> getAllDaysLessonInfo() {
+        return allDaysLessonInfo;
+    }
 
-        if (DayEquivalent.getPreviouslyStoredEquivalents().containsKey(dayOfWeek) && DayEquivalent.getPreviouslyStoredEquivalents().get(dayOfWeek) != null) { //If has already made it
-            return DayEquivalent.getPreviouslyStoredEquivalent(dayOfWeek); //return stored
+    /**
+     * FragmentStatePagerAdapter was used as opposed to FragmentPagerAdapter to manually cache & load Fragments
+     */
+    public class SectionsPagerAdapter extends FragmentStatePagerAdapter {
+
+        private Map<DayOfWeek, DayFragmentFactory.DayFragment> previouslyStoredFragments = new HashMap<>();
+
+        public SectionsPagerAdapter(FragmentManager fm) {
+            super(fm);
         }
 
-        DayClass dayClass = dEquiv.getDayClass();
-        List<LessonInfo> infoForDay = getAllDaysLessonInfo().get(dayOfWeek);
-        DayClass.DayFragment fragment = dayClass.newInstance(dayClass.getPageTitle(), infoForDay/*, true*/);
+        @Override
+        public Fragment getItem(int position) {
+            int dayInt = ++position; //0 is monday, 1 is tuesday etc
 
-        DayEquivalent.addToPrevious(dayOfWeek, fragment);
+            ArrayList<String> usersCurrentLocalLessons = getUsersLocalLessons();
 
-        return fragment;
+            DayEquivalent dayEquivalent = new DayEquivalent(getWeakReference(), dayInt);
+
+            DayOfWeek dayOfWeek = dayEquivalent.getEquivalent();
+
+            Map<DayOfWeek, DayFragmentFactory.DayFragment> previousFragments = getPreviouslyStoredFragments();
+
+            if (previousFragments.containsKey(dayOfWeek)) {
+                DayFragmentFactory.DayFragment gotten = previousFragments.get(dayOfWeek);
+
+                if (gotten instanceof DayFragmentFactory.LessonsFragment) {
+
+                    // if has already made instance of it & is an instance that has lessons
+                    // - get the lessons the user had configured at the time of instantiation
+                    // - then see if contains different lessons, if so, redo with new lesson names
+
+                    DayFragmentFactory.LessonsFragment fragment = (DayFragmentFactory.LessonsFragment)
+                            getStoredFragmentByDay(dayOfWeek);
+
+                    ArrayList<String> lessonsBeingTaught = fragment.getLessons();
+
+                    // 'reinvented' containsAll algorithm below to check if the user has changed lessons in order to
+                    // get times for different set of lessons on that day
+                    boolean same = true;
+                    for (String lesson : usersCurrentLocalLessons) {
+                        if (!lessonsBeingTaught.contains(lesson)) {
+                            // the current users lessons are different to when fragment instantiated
+                            // must redo with updated lessons.
+                            same = false;
+                            break;
+                        }
+                    }
+                    if (same) {
+                        return fragment; //return stored
+                    } else {
+
+                    }
+                }
+                // If got to this stage, "same" hasn't been
+                // true and the DayFragment is instanceof NoLessonsFragment so must need rechecking
+                removeFromStoredFragments(dayOfWeek);
+            }
+
+            // If got to this stage, either one of the following is true:
+            // - the user hasn't got data for that specific day
+            // - the current users lessons are different to when fragment instantiated / "same" was false
+            // - DayFragment is instanceof NoLessonsFragment
+            //
+            // Which ever one, fragment must need attempting again + to reinstantiate once more
+
+            boolean hasLessonInfoForDay = getAllDaysLessonInfo().containsKey(dayOfWeek); //
+
+            DayFragmentFactory dayFragmentFactory = dayEquivalent.getDayFragmentFactory();
+
+            DayFragmentFactory.DayFragment lessonsFragment;
+
+            if (hasLessonInfoForDay) {
+                List<LessonInfo> infoForDay = getAllDaysLessonInfo().get(dayOfWeek);
+
+                lessonsFragment = dayFragmentFactory.createHasLessonsFragment(infoForDay);
+            } else { //no lesson info for that day
+                // either error occurred in the doOcr function or user doesn't have it in database
+                lessonsFragment = dayFragmentFactory.createNoLessonsFragment();
+            }
+            addToStoredFragments(dayOfWeek, lessonsFragment);
+            return lessonsFragment;
+        }
+
+
+        @Override
+        public int getCount() {
+            return getDaysToShow().length;
+        }
+
+        @Override
+        public CharSequence getPageTitle(int position) {
+            return Util.upperFirst(DayEquivalent.getDay(++position));
+        }
+
+        private Map<DayOfWeek, DayFragmentFactory.DayFragment> getPreviouslyStoredFragments() {
+            return previouslyStoredFragments;
+        }
+
+        private DayFragmentFactory.DayFragment getStoredFragmentByDay(DayOfWeek equiv) {
+            return getPreviouslyStoredFragments().get(equiv);
+        }
+
+        private void removeFromStoredFragments(DayOfWeek key) {
+            previouslyStoredFragments.remove(key);
+        }
+
+        private void addToStoredFragments(DayOfWeek key, DayFragmentFactory.DayFragment value) {
+            previouslyStoredFragments.put(key, value);
+        }
     }
-
-    @Override
-    public int getCount() {
-        return getDaysToShow().length;
-    }
-
-    @Override
-    public CharSequence getPageTitle(int position) {
-        return Util.upperFirst(DayEquivalent.getDay(++position));
-    }
-}
 }

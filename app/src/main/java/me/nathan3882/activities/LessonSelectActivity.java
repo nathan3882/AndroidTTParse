@@ -22,7 +22,6 @@ public class LessonSelectActivity extends AbstractPostLoginActivity implements I
 
     private static Pattern validLesson = Pattern.compile("(^((?![^a-zA-Z ]).)*)$");
 
-    private boolean isUpdating = false;
     private WeakReference<Activity> weakReference;
     private User user;
     private ProgressBar progressBar;
@@ -62,14 +61,6 @@ public class LessonSelectActivity extends AbstractPostLoginActivity implements I
         return headerText;
     }
 
-    public boolean isUpdating() {
-        return isUpdating;
-    }
-
-    private void setUpdating(boolean isUpdating) {
-        this.isUpdating = isUpdating;
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -89,14 +80,15 @@ public class LessonSelectActivity extends AbstractPostLoginActivity implements I
         setInitialBundle(getIntent().getExtras(), savedInstanceState);
 
         if (bundle != null) { //make this a define user func in super class
-            setUpdating(bundle.getBoolean(BundleName.IS_UPDATING.asString()));
             if (bundle.getBoolean(BundleName.USER_LESSONS_POPULATED.asString())) {
+                System.out.println("calling pop");
                 initUser(bundle, true);
             }else{
+                System.out.println("calling non pop");
                 initUser(bundle, false);
             }
-
         }
+
 
         refreshHeaderText();
 

@@ -58,15 +58,19 @@ public class GetRequest extends AsyncTask<String, Integer, RequestResponse> {
 
             publishProgress(70);
 
+            String builderToString = builder.toString();
             switch (getAction()) {
                 case GET_USER_INFO:
-                    requestResponse.setData(new UserdataRequestResponseData(builder.toString()));
+                    requestResponse.setData(new UserdataRequestResponseData(builderToString));
                     break;
                 case GET_USER_LESSON_NAMES:
-                    requestResponse.setData(new LessonNameRequestResponseData(builder.toString()));
+                    requestResponse.setData(new LessonNameRequestResponseData(builderToString));
                     break;
                 case GET_USER_HAS_LESSON_NAMES:
-                    requestResponse.setData(new HasLessonNamesRequestResponseData(builder.toString()));
+                    requestResponse.setData(new HasLessonNamesRequestResponseData(builderToString));
+                    break;
+                case GET_OCR_STRING:
+                    requestResponse.setData(new OcrRequestResponseData(builderToString));
                     break;
             }
             publishProgress(80);

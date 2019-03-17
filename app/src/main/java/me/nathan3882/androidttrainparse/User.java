@@ -1,14 +1,11 @@
 package me.nathan3882.androidttrainparse;
 
 import android.app.Activity;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import me.nathan3882.activities.ProgressBarable;
-import me.nathan3882.requesting.Action;
-import me.nathan3882.requesting.Pair;
-import me.nathan3882.requesting.PostRequest;
-import me.nathan3882.requesting.ProgressedPostRequest;
-import me.nathan3882.responding.ResponseEvent;
-import me.nathan3882.responding.UserdataRequestResponseData;
+import me.nathan3882.requesting.*;
+import me.nathan3882.responding.*;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -96,7 +93,24 @@ public class User implements ManipulableUser {
 
     @Override
     public void synchroniseWithDatabase(ResponseEvent event) {
+        Client lessonNamesClient = new Client(Util.DEFAULT_TTRAINPARSE, Action.GET_USER_LESSON_NAMES);
 
+        new GetRequest(lessonNamesClient, "/" + getUserEmail() + Util.PARAMS, new ResponseEvent() {
+            @Override
+            public void onCompletion(@NonNull RequestResponse requestResponse) {
+                RequestResponseData data = requestResponse.getData();
+
+                if (data instanceof LessonNameRequestResponseData) {
+
+                    LessonNameRequestResponseData lessonNameData =
+                            (LessonNameRequestResponseData) data;
+
+                    ArrayList<String> lessonNames = lessonNameData.getLessonNames();
+                    synchronise(lessonNames);
+                }
+                event.onCompletion(requestResponse);
+            }
+        }).execute();
     }
 
     private List<Pair.KeyObjectPair> getBodyFromLessonName(String lesson) {

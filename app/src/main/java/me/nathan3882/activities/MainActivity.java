@@ -20,7 +20,6 @@ import me.nathan3882.responding.*;
 import me.nathan3882.testingapp.R;
 
 import java.lang.ref.WeakReference;
-import java.time.DayOfWeek;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -41,8 +40,11 @@ public class MainActivity extends AppCompatActivity implements IActivityReferenc
     public static void startTimeDisplayActivity(WeakReference<Activity> reference,
                                                 ProgressBarable barable, User user, boolean userLessonsPopulated) {
         if (userLessonsPopulated) {
-            startTimeDisplayIntent(user.getLocalLessons(), reference.get(), user);
+            System.out.println("no 1");
+            startTimeDisplayIntent(reference.get(), user);
         } else {
+            System.out.println("no 2");
+
             Client lessonNamesClient = new Client(Util.DEFAULT_TTRAINPARSE, Action.GET_USER_LESSON_NAMES);
 
             new ProgressedGetRequest(reference, barable.getProgressBarRid(), lessonNamesClient, "/" + user.getUserEmail() + Util.PARAMS, new ResponseEvent() {
@@ -56,9 +58,10 @@ public class MainActivity extends AppCompatActivity implements IActivityReferenc
                                 (LessonNameRequestResponseData) data;
 
                         ArrayList<String> lessonNames = lessonNameData.getLessonNames();
+                        user.synchronise(lessonNames);
                         Activity activity = reference.get();
                         if (activity != null) {
-                            startTimeDisplayIntent(lessonNames, activity, user);
+                            startTimeDisplayIntent(activity, user);
                         } else {
                             onFailure();
                         }
@@ -73,14 +76,36 @@ public class MainActivity extends AppCompatActivity implements IActivityReferenc
         }
     }
 
-    private static void startTimeDisplayIntent(ArrayList<String> lessonNames, Activity activity, User user) {
+    private static void startTimeDisplayIntent(Activity activity, User user) {
+
         Intent toTimeDisplay = new Intent(activity, TimeDisplayActivity.class);
-        toTimeDisplay.putExtra(BundleName.EMAIL.asString(), user.getUserEmail());
-        toTimeDisplay.putExtra(BundleName.HOME_CRS.asString(), user.getHomeCrs());
-        toTimeDisplay.putExtra(BundleName.DAYS_TO_SHOW.asString(), getDaysToShow(getCalendar().get(Calendar.DAY_OF_WEEK)));
-        toTimeDisplay.putStringArrayListExtra(BundleName.LESSONS.asString(), lessonNames);
-        toTimeDisplay.putExtra(BundleName.USER_LESSONS_POPULATED.asString(), true);
+        Bundle bundle = new Bundle();
+        bundle.putString(BundleName.EMAIL.asString(), user.getUserEmail());
+        bundle.putStringArrayList(BundleName.LESSONS.asString(), user.getLocalLessons());
+        bundle.putString(BundleName.HOME_CRS.asString(), user.getHomeCrs());
+        bundle.putBoolean(BundleName.USER_LESSONS_POPULATED.asString(), true);
+        bundle.putIntArray(BundleName.DAYS_TO_SHOW.asString(), getDaysToShow(getCalendar().get(Calendar.DAY_OF_WEEK)));
+        toTimeDisplay.putExtras(bundle);
         activity.startActivity(toTimeDisplay);
+    }
+
+    public static void startLessonSelect(WeakReference<Activity> reference, ProgressBarable barable, User user) {
+        Intent msgToLessonSelectActivity = new Intent(reference.get(), LessonSelectActivity.class);
+        Bundle bundleForLessonSelect = new Bundle();
+        bundleForLessonSelect.putString(BundleName.EMAIL.asString(), user.getUserEmail());
+        bundleForLessonSelect.putString(BundleName.HOME_CRS.asString(), user.getHomeCrs());
+
+        user.synchroniseWithDatabase(new ResponseEvent() {
+            @Override
+            public void onCompletion(@NonNull RequestResponse requestResponse) {
+
+                bundleForLessonSelect.putStringArrayList(BundleName.LESSONS.asString(), user.getLocalLessons());
+                bundleForLessonSelect.putBoolean(BundleName.USER_LESSONS_POPULATED.asString(), true);
+
+                msgToLessonSelectActivity.putExtras(bundleForLessonSelect);
+                reference.get().startActivity(msgToLessonSelectActivity);
+            }
+        });
     }
 
     public static Calendar getCalendar() {
@@ -88,66 +113,7 @@ public class MainActivity extends AppCompatActivity implements IActivityReferenc
     }
 
     private static int[] getDaysToShow(int currentDay) {
-        int[] showThese = new int[2];
-        // TODO Allow user configuration
-        if (currentDay == 6 || currentDay == 7) { //Weekend, show monday
-            showThese[0] = java.time.DayOfWeek.MONDAY.getValue();
-            showThese[1] = java.time.DayOfWeek.TUESDAY.getValue();
-        } else if (currentDay == 5) { //Friday, show friday and monday
-            showThese[0] = DayOfWeek.FRIDAY.getValue();
-            showThese[1] = DayOfWeek.MONDAY.getValue();
-        } else { //Show today and tomorrow
-            showThese[0] = DayOfWeek.of(currentDay).getValue();
-            showThese[1] = DayOfWeek.of(currentDay + 1).getValue();
-        }
-        return showThese;
-    }
-
-    public static void startLessonSelect(WeakReference<Activity> reference, ProgressBarable barable, boolean updating, UserdataRequestResponseData request) {
-        Intent msgToLessonSelectActivity = new Intent(reference.get(), LessonSelectActivity.class);
-        Bundle bundleForLessonSelect = new Bundle();
-        bundleForLessonSelect.putBoolean(BundleName.IS_UPDATING.asString(), updating);
-        bundleForLessonSelect.putString(BundleName.EMAIL.asString(), request.getUserEmail());
-        bundleForLessonSelect.putString(BundleName.HOME_CRS.asString(), request.getHomeCrs());
-
-        Client lessonNamesClient = new Client(Util.DEFAULT_TTRAINPARSE, Action.GET_USER_LESSON_NAMES);
-        ArrayList<String> toBundle = new ArrayList<>();
-        if (updating) {
-            new ProgressedGetRequest(reference, barable.getProgressBarRid(), lessonNamesClient, "/" + request.getUserEmail() + Util.PARAMS,
-                    new ResponseEvent() {
-                        @Override
-                        public void onCompletion(@NonNull RequestResponse requestResponse) {
-                            RequestResponseData data = requestResponse.getData();
-                            if (data instanceof LessonNameRequestResponseData) {
-
-                                LessonNameRequestResponseData lessonNameData = (LessonNameRequestResponseData) data;
-                                //Business studies, Biology, Computer Science
-                                toBundle.addAll(lessonNameData.getLessonNames());
-
-                            }
-                        }
-
-                        @Override
-                        public void onFailure() {
-
-                        }
-
-                        @Override
-                        public void doFinally() { //bundle will either contain empty list, or populated one
-                            finaliseLessonSelect(bundleForLessonSelect, toBundle, msgToLessonSelectActivity, reference);
-                        }
-                    }).execute();
-        } else {
-            finaliseLessonSelect(bundleForLessonSelect, toBundle, msgToLessonSelectActivity, reference);
-        }
-    }
-
-    private static void finaliseLessonSelect(Bundle bundleForLessonSelect, ArrayList<String> toBundle, Intent msgToLessonSelectActivity, WeakReference<Activity> reference) {
-        bundleForLessonSelect.putStringArrayList(BundleName.LESSONS.asString(), toBundle);
-
-        msgToLessonSelectActivity.putExtras(bundleForLessonSelect);
-
-        reference.get().startActivity(msgToLessonSelectActivity);
+        return new int[]{1, 2, 3, 4, 5}; //all days
     }
 
     public void showToast(Context c, String text, String length, boolean show) {
@@ -286,16 +252,12 @@ public class MainActivity extends AppCompatActivity implements IActivityReferenc
                         public void onCompletion(@NonNull RequestResponse requestResponse) {
                             HasLessonNamesRequestResponseData data = (HasLessonNamesRequestResponseData) requestResponse.getData();
 
-                            if (data != null && data.hasEnteredLessonsBefore()) {
-                                boolean updating = addLessonInfoButton.isChecked();
-                                if (updating) {
-                                    startLessonSelect(getWeakReference(), MainActivity.this, true, responseData);
-                                } else { //show time display
-                                    User newUser = User.fromData(responseData);
-                                    startTimeDisplayActivity(getWeakReference(), MainActivity.this, newUser, false);
-                                }
-                            } else { //open lesson select
-                                startLessonSelect(getWeakReference(), MainActivity.this, false, responseData);
+                            boolean updating = addLessonInfoButton.isChecked();
+                            User user = User.fromData(responseData);
+                            if (updating) {
+                                startLessonSelect(getWeakReference(), MainActivity.this, user);
+                            } else { //show time display
+                                startTimeDisplayActivity(getWeakReference(), MainActivity.this, user, false);
                             }
                         }
 
@@ -361,4 +323,17 @@ public class MainActivity extends AppCompatActivity implements IActivityReferenc
 
         return inAnimation;
     }
+        /*int[] showThese = new int[2];
+        // TODO Allow user configuration
+        if (currentDay == 6 || currentDay == 7) { //Weekend, show monday
+            showThese[0] = java.time.DayOfWeek.MONDAY.getValue();
+            showThese[1] = java.time.DayOfWeek.TUESDAY.getValue();
+        } else if (currentDay == 5) { //Friday, show friday and monday
+            showThese[0] = DayOfWeek.FRIDAY.getValue();
+            showThese[1] = DayOfWeek.MONDAY.getValue();
+        } else { //Show today and tomorrow
+            showThese[0] = DayOfWeek.of(currentDay).getValue();
+            showThese[1] = DayOfWeek.of(currentDay + 1).getValue();
+        }
+        return showThese;*/
 }
