@@ -1,4 +1,4 @@
-package me.nathan3882.activities;
+package me.nathan3882.androidttrainparse.activities;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -8,9 +8,9 @@ import android.widget.Toast;
 import me.nathan3882.androidttrainparse.BundleName;
 import me.nathan3882.androidttrainparse.ManipulableUser;
 import me.nathan3882.androidttrainparse.User;
-import me.nathan3882.requesting.IActivityReferencer;
-import me.nathan3882.requesting.Pair;
-import me.nathan3882.responding.ResponseEvent;
+import me.nathan3882.androidttrainparse.requesting.IActivityReferencer;
+import me.nathan3882.androidttrainparse.requesting.Pair;
+import me.nathan3882.androidttrainparse.responding.ResponseEvent;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;

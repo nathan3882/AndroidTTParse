@@ -1,8 +1,8 @@
 package me.nathan3882.androidttrainparse;
 
 import android.app.Activity;
-import me.nathan3882.activities.ProgressBarable;
-import me.nathan3882.responding.ResponseEvent;
+import me.nathan3882.androidttrainparse.activities.ProgressBarable;
+import me.nathan3882.androidttrainparse.responding.ResponseEvent;
 
 import java.lang.ref.WeakReference;
 

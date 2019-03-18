@@ -1,6 +1,6 @@
 package me.nathan3882.androidttrainparse;
 
-import me.nathan3882.requesting.Action;
+import me.nathan3882.androidttrainparse.requesting.Action;
 
 public class Client {
 

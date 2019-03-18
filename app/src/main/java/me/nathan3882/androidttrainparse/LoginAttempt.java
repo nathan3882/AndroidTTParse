@@ -1,7 +1,7 @@
 package me.nathan3882.androidttrainparse;
 
-import me.nathan3882.activities.MainActivity;
-import me.nathan3882.responding.UserdataRequestResponseData;
+import me.nathan3882.androidttrainparse.activities.MainActivity;
+import me.nathan3882.androidttrainparse.responding.UserdataRequestResponseData;
 
 public class LoginAttempt {
 

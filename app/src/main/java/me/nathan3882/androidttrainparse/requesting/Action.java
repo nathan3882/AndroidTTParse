@@ -1,4 +1,4 @@
-package me.nathan3882.requesting;
+package me.nathan3882.androidttrainparse.requesting;
 
 public enum Action {
     GET_USER_INFO("getUserInfo"),

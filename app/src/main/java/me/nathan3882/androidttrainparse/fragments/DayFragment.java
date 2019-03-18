@@ -1,4 +1,4 @@
-package me.nathan3882.androidttrainparse;
+package me.nathan3882.androidttrainparse.fragments;
 
 import android.content.Context;
 import android.net.Uri;
@@ -8,24 +8,27 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import me.nathan3882.androidttrainparse.Util;
 import me.nathan3882.testingapp.R;
 
 import java.time.DayOfWeek;
 
-public class DayFragment extends Fragment {
+public abstract class DayFragment extends Fragment {
 
     protected DayOfWeek dayOfWeek;
 
     protected String header;
-    private DayFragmentFactory.DayFragment.OnFragmentInteractionListener mListener;
+    private DayFragment.OnFragmentInteractionListener mListener;
 
     public DayFragment() {
 
     }
 
-    public StringBuilder getStringToDisplay() {
-        return new StringBuilder("");
-    }
+    abstract StringBuilder getStringToDisplay();
+
+    abstract String getHeader();
+
+    abstract DayOfWeek getDayOfWeek();
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -40,14 +43,6 @@ public class DayFragment extends Fragment {
         return view;
     }
 
-    public String getHeader() {
-        return header;
-    }
-
-    public DayOfWeek getDayOfWeek() {
-        return this.dayOfWeek;
-    }
-
     // TODO: Rename method, update argument and hook method into UI event
     public void onButtonPressed(Uri uri) {
         if (mListener != null) {
@@ -58,8 +53,8 @@ public class DayFragment extends Fragment {
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        if (context instanceof DayFragmentFactory.DayFragment.OnFragmentInteractionListener) {
-            mListener = (DayFragmentFactory.DayFragment.OnFragmentInteractionListener) context;
+        if (context instanceof DayFragment.OnFragmentInteractionListener) {
+            mListener = (DayFragment.OnFragmentInteractionListener) context;
         } else {
             throw new RuntimeException(context.toString()
                     + " must implement OnFragmentInteractionListener");

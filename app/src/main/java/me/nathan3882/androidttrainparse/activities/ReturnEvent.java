@@ -1,4 +1,4 @@
-package me.nathan3882.activities;
+package me.nathan3882.androidttrainparse.activities;
 
 public interface ReturnEvent {
 

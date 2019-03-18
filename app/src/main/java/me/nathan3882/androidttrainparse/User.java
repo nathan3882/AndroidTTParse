@@ -3,9 +3,9 @@ package me.nathan3882.androidttrainparse;
 import android.app.Activity;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import me.nathan3882.activities.ProgressBarable;
-import me.nathan3882.requesting.*;
-import me.nathan3882.responding.*;
+import me.nathan3882.androidttrainparse.activities.ProgressBarable;
+import me.nathan3882.androidttrainparse.requesting.*;
+import me.nathan3882.androidttrainparse.responding.*;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;

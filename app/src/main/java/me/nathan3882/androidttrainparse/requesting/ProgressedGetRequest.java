@@ -1,12 +1,12 @@
-package me.nathan3882.requesting;
+package me.nathan3882.androidttrainparse.requesting;
 
 import android.app.Activity;
 import android.view.View;
 import android.widget.ProgressBar;
-import me.nathan3882.activities.ProgressBarable;
+import me.nathan3882.androidttrainparse.activities.ProgressBarable;
 import me.nathan3882.androidttrainparse.Client;
-import me.nathan3882.responding.RequestResponse;
-import me.nathan3882.responding.ResponseEvent;
+import me.nathan3882.androidttrainparse.responding.RequestResponse;
+import me.nathan3882.androidttrainparse.responding.ResponseEvent;
 
 import java.lang.ref.WeakReference;
 

@@ -1,8 +1,8 @@
-package me.nathan3882.requesting;
+package me.nathan3882.androidttrainparse.requesting;
 
 import android.os.AsyncTask;
 import me.nathan3882.androidttrainparse.Client;
-import me.nathan3882.responding.*;
+import me.nathan3882.androidttrainparse.responding.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;

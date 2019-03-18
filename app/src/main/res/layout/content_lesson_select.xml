@@ -7,6 +7,6 @@
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         tools:showIn="@layout/activity_lesson_select"
-        tools:activity="me.nathan3882.activities.LessonSelectActivity">
+        tools:activity="me.nathan3882.androidttrainparse.activities.LessonSelectActivity">
 
 </android.support.constraint.ConstraintLayout>

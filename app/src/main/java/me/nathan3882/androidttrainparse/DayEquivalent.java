@@ -1,7 +1,8 @@
 package me.nathan3882.androidttrainparse;
 
 import android.app.Activity;
-import me.nathan3882.requesting.IActivityReferencer;
+import me.nathan3882.androidttrainparse.fragments.DayFragmentFactory;
+import me.nathan3882.androidttrainparse.requesting.IActivityReferencer;
 
 import java.lang.ref.WeakReference;
 import java.time.DayOfWeek;

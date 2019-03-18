@@ -1,6 +1,8 @@
-package me.nathan3882.androidttrainparse;
+package me.nathan3882.androidttrainparse.fragments;
 
 import android.os.Bundle;
+import me.nathan3882.androidttrainparse.BundleName;
+import me.nathan3882.androidttrainparse.LessonInfo;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -68,6 +70,16 @@ public class DayLessonsFragment extends DayFragment {
         }
         mainString.append("</center></html>");
         return mainString;
+    }
+
+    @Override
+    public String getHeader() {
+        return this.header;
+    }
+
+    @Override
+    public DayOfWeek getDayOfWeek() {
+        return this.dayOfWeek;
     }
 
     private String getPrettyMinute(int minute) {

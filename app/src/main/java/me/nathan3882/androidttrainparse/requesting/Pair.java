@@ -1,6 +1,6 @@
-package me.nathan3882.requesting;
+package me.nathan3882.androidttrainparse.requesting;
 
-import me.nathan3882.responding.ResponseEvent;
+import me.nathan3882.androidttrainparse.responding.ResponseEvent;
 
 public class Pair {
 

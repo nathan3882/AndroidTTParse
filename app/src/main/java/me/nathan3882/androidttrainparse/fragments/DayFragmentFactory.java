@@ -1,10 +1,13 @@
-package me.nathan3882.androidttrainparse;
+package me.nathan3882.androidttrainparse.fragments;
 
 import android.app.Activity;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import me.nathan3882.activities.TimeDisplayActivity;
-import me.nathan3882.requesting.IActivityReferencer;
+import me.nathan3882.androidttrainparse.activities.TimeDisplayActivity;
+import me.nathan3882.androidttrainparse.BundleName;
+import me.nathan3882.androidttrainparse.LessonInfo;
+import me.nathan3882.androidttrainparse.Util;
+import me.nathan3882.androidttrainparse.requesting.IActivityReferencer;
 
 import java.lang.ref.WeakReference;
 import java.time.DayOfWeek;

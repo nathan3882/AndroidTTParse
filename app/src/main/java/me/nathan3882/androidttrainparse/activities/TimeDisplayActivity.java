@@ -1,4 +1,4 @@
-package me.nathan3882.activities;
+package me.nathan3882.androidttrainparse.activities;
 
 import android.app.Activity;
 import android.net.Uri;
@@ -11,13 +11,16 @@ import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.widget.ProgressBar;
 import me.nathan3882.androidttrainparse.*;
-import me.nathan3882.requesting.Action;
-import me.nathan3882.requesting.Pair;
-import me.nathan3882.requesting.ProgressedGetRequest;
-import me.nathan3882.responding.OcrRequestResponseData;
-import me.nathan3882.responding.RequestResponse;
-import me.nathan3882.responding.RequestResponseData;
-import me.nathan3882.responding.ResponseEvent;
+import me.nathan3882.androidttrainparse.fragments.DayFragment;
+import me.nathan3882.androidttrainparse.fragments.DayFragmentFactory;
+import me.nathan3882.androidttrainparse.fragments.DayLessonsFragment;
+import me.nathan3882.androidttrainparse.requesting.Action;
+import me.nathan3882.androidttrainparse.requesting.Pair;
+import me.nathan3882.androidttrainparse.requesting.ProgressedGetRequest;
+import me.nathan3882.androidttrainparse.responding.OcrRequestResponseData;
+import me.nathan3882.androidttrainparse.responding.RequestResponse;
+import me.nathan3882.androidttrainparse.responding.RequestResponseData;
+import me.nathan3882.androidttrainparse.responding.ResponseEvent;
 import me.nathan3882.testingapp.R;
 
 import java.lang.ref.WeakReference;

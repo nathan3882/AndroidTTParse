@@ -11,7 +11,6 @@
     <string name="title_activity_lesson_select">LessonSelectActivity</string>
     <string name="lessonNameHelp"></string>
     <string name="advance">Advance</string>
-    <string name="dayTitle">Lessons for {day}:</string>
     <string name="emailHelper">Enter email below</string>
 
     <!-- TODO: Remove or change this placeholder text -->

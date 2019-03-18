@@ -5,7 +5,7 @@
         xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:activity="me.nathan3882.activities.LessonSelectActivity" android:id="@+id/coordinatorLayout2">
+        tools:activity="me.nathan3882.androidttrainparse.activities.LessonSelectActivity" android:id="@+id/coordinatorLayout2">
 
     <TextView
             android:text="headerText"

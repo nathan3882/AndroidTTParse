@@ -1,41 +1,44 @@
-package me.nathan3882.responding;
+package me.nathan3882.androidttrainparse.responding;
 
 import android.support.annotation.Nullable;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class OcrRequestResponseData implements RequestResponseData {
+public class HasLessonNamesRequestResponseData implements RequestResponseData {
+
 
     private JSONObject jsonObject;
-    private String depletedOcrString = "";
-    private String responseString;
+    private boolean hasEnteredLessonsBefore;
+    private String response;
 
-    public OcrRequestResponseData(String responseString) {
-        this.responseString = responseString;
+    public HasLessonNamesRequestResponseData(String response) {
+        this.response = response;
         try {
-            this.jsonObject = new JSONObject(responseString);
+            setJsonObject(new JSONObject(response));
             updateSubclassValues();
         } catch (JSONException e) {
             e.printStackTrace();
         }
     }
 
+    public boolean hasEnteredLessonsBefore() {
+        return hasEnteredLessonsBefore;
+    }
+
     @Override
     public void updateSubclassValues() {
         try {
-            this.depletedOcrString = jsonObject.getString("ocrString");
+            if (getJsonObject() != null) {
+                this.hasEnteredLessonsBefore = getJsonObject().getBoolean("hasLessonNames");
+            }
         } catch (JSONException e) {
             e.printStackTrace();
         }
     }
 
-    public String getDepletedOcrString() {
-        return depletedOcrString;
-    }
-
     @Override
     public String getResponseString() {
-        return this.responseString;
+        return this.response;
     }
 
     @Nullable
@@ -46,6 +49,6 @@ public class OcrRequestResponseData implements RequestResponseData {
 
     @Override
     public void setJsonObject(JSONObject jsonObject) {
-
+this.jsonObject = jsonObject;
     }
 }

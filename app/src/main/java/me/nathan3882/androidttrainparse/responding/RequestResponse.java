@@ -1,7 +1,7 @@
-package me.nathan3882.responding;
+package me.nathan3882.androidttrainparse.responding;
 
 import android.support.annotation.Nullable;
-import me.nathan3882.requesting.Action;
+import me.nathan3882.androidttrainparse.requesting.Action;
 
 public class RequestResponse {
 

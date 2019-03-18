@@ -1,4 +1,4 @@
-package me.nathan3882.activities;
+package me.nathan3882.androidttrainparse.activities;
 
 import android.app.Activity;
 import android.content.Context;
@@ -13,10 +13,10 @@ import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.*;
 import me.nathan3882.androidttrainparse.*;
-import me.nathan3882.requesting.Action;
-import me.nathan3882.requesting.IActivityReferencer;
-import me.nathan3882.requesting.ProgressedGetRequest;
-import me.nathan3882.responding.*;
+import me.nathan3882.androidttrainparse.requesting.Action;
+import me.nathan3882.androidttrainparse.requesting.IActivityReferencer;
+import me.nathan3882.androidttrainparse.requesting.ProgressedGetRequest;
+import me.nathan3882.androidttrainparse.responding.*;
 import me.nathan3882.testingapp.R;
 
 import java.lang.ref.WeakReference;
