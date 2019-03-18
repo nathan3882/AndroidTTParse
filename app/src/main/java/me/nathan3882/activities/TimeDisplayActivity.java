@@ -25,7 +25,7 @@ import java.time.DayOfWeek;
 import java.util.*;
 
 public class TimeDisplayActivity extends AbstractPostLoginActivity
-        implements DayFragmentFactory.DayFragment.OnFragmentInteractionListener, ProgressBarable {
+        implements DayFragment.OnFragmentInteractionListener, ProgressBarable {
 
     private Map<DayOfWeek, List<LessonInfo>> allDaysLessonInfo = new HashMap<>();
     /**
@@ -180,26 +180,20 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity
                     //Has ocr in the bundle from the fetchAndStoreOcr function, but not in the all days lesson info
                     List<LessonInfo> lessonInfos = defineLessonInfo(dayToShow, storedOcr);
                     if (lessonInfos.size() != 0 && !storedOcr.equalsIgnoreCase("null")) {
-                            System.out.println("66666");
                             allDaysLessonInfo.put(dayToShow, lessonInfos);
                             getInitialBundle().putString(daysBundleName.asString(), storedOcr);
                             hasLessonInfo = true;
                         }
-                    System.out.println("22222");
                 }
             }
         }
         if (!hasOcrStored) {
-            System.out.println("33333");
-
             fetchAndStoreOcr(dayToShow, new ResponseEvent() {
                 @Override
                 public void onCompletion(@NonNull RequestResponse requestResponse) {
                     RequestResponseData data = requestResponse.getData();
-                    System.out.println("44444");
 
                     if (data instanceof OcrRequestResponseData) {
-                        System.out.println("55555");
                         OcrRequestResponseData ocrRequestResponseData = (OcrRequestResponseData) data;
 
                         String fetchedDepletedOcrString = ocrRequestResponseData.getDepletedOcrString();
@@ -208,7 +202,6 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity
                         System.out.println("The size for " + lessonInfos.size() + " day = " + dayToShow.name());
                         if (lessonInfos.size() != 0 && !fetchedDepletedOcrString.equalsIgnoreCase("null")) {
                             if (daysBundleName != null) {
-                                System.out.println("66666");
                                 allDaysLessonInfo.put(dayToShow, lessonInfos);
                                 getInitialBundle().putString(daysBundleName.asString(), fetchedDepletedOcrString);
                             }
@@ -255,7 +248,7 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity
      */
     public class SectionsPagerAdapter extends FragmentStatePagerAdapter {
 
-        private Map<DayOfWeek, DayFragmentFactory.DayFragment> previouslyStoredFragments = new HashMap<>();
+        private Map<DayOfWeek, DayFragment> previouslyStoredFragments = new HashMap<>();
 
         public SectionsPagerAdapter(FragmentManager fm) {
             super(fm);
@@ -271,18 +264,18 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity
 
             DayOfWeek dayOfWeek = dayEquivalent.getEquivalent();
 
-            Map<DayOfWeek, DayFragmentFactory.DayFragment> previousFragments = getPreviouslyStoredFragments();
+            Map<DayOfWeek, DayFragment> previousFragments = getPreviouslyStoredFragments();
 
             if (previousFragments.containsKey(dayOfWeek)) {
-                DayFragmentFactory.DayFragment gotten = previousFragments.get(dayOfWeek);
+                DayFragment gotten = previousFragments.get(dayOfWeek);
 
-                if (gotten instanceof DayFragmentFactory.LessonsFragment) {
+                if (gotten instanceof DayLessonsFragment) {
 
                     // if has already made instance of it & is an instance that has lessons
                     // - get the lessons the user had configured at the time of instantiation
                     // - then see if contains different lessons, if so, redo with new lesson names
 
-                    DayFragmentFactory.LessonsFragment fragment = (DayFragmentFactory.LessonsFragment)
+                    DayLessonsFragment fragment = (DayLessonsFragment)
                             getStoredFragmentByDay(dayOfWeek);
 
                     ArrayList<String> lessonsBeingTaught = fragment.getLessons();
@@ -305,14 +298,14 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity
                     }
                 }
                 // If got to this stage, "same" hasn't been
-                // true and the DayFragment is instanceof NoLessonsFragment so must need rechecking
+                // true and the DayFragment is instanceof DayNoLessonsFragment so must need rechecking
                 removeFromStoredFragments(dayOfWeek);
             }
 
             // If got to this stage, either one of the following is true:
             // - the user hasn't got data for that specific day
             // - the current users lessons are different to when fragment instantiated / "same" was false
-            // - DayFragment is instanceof NoLessonsFragment
+            // - DayFragment is instanceof DayNoLessonsFragment
             //
             // Which ever one, fragment must need attempting again + to reinstantiate once more
 
@@ -320,7 +313,7 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity
 
             DayFragmentFactory dayFragmentFactory = dayEquivalent.getDayFragmentFactory();
 
-            DayFragmentFactory.DayFragment lessonsFragment;
+            DayFragment lessonsFragment;
 
             if (hasLessonInfoForDay) {
                 List<LessonInfo> infoForDay = getAllDaysLessonInfo().get(dayOfWeek);
@@ -345,11 +338,11 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity
             return Util.upperFirst(DayEquivalent.getDay(++position));
         }
 
-        private Map<DayOfWeek, DayFragmentFactory.DayFragment> getPreviouslyStoredFragments() {
+        private Map<DayOfWeek, DayFragment> getPreviouslyStoredFragments() {
             return previouslyStoredFragments;
         }
 
-        private DayFragmentFactory.DayFragment getStoredFragmentByDay(DayOfWeek equiv) {
+        private DayFragment getStoredFragmentByDay(DayOfWeek equiv) {
             return getPreviouslyStoredFragments().get(equiv);
         }
 
@@ -357,7 +350,7 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity
             previouslyStoredFragments.remove(key);
         }
 
-        private void addToStoredFragments(DayOfWeek key, DayFragmentFactory.DayFragment value) {
+        private void addToStoredFragments(DayOfWeek key, DayFragment value) {
             previouslyStoredFragments.put(key, value);
         }
     }
