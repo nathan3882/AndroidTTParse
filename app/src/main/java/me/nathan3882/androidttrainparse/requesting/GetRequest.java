@@ -33,6 +33,7 @@ public class GetRequest extends AsyncTask<String, Integer, RequestResponse> {
     //So many publish progresses to make it seem more of a gradual thing, not just instantly done
     @Override
     public RequestResponse doInBackground(String... params) {
+        responseEvent.onPreExecute();
         String webService = client.getWebService() + parametersToRoute(getParameters(), false);
         RequestResponse requestResponse = null;
         try {
@@ -71,6 +72,11 @@ public class GetRequest extends AsyncTask<String, Integer, RequestResponse> {
                     break;
                 case GET_OCR_STRING:
                     requestResponse.setData(new OcrRequestResponseData(builderToString));
+                    break;
+                case GET_BEST_TRAINS:
+                    String homeCrsInParameters = getParameters().get(0).split("/")[2];
+                    //^^ is getParameters() index 0 is "/900/BMH" so split"/"[2] is the BMH crs code
+                    requestResponse.setData(new GetBestTrainsRequestResponseData(homeCrsInParameters, builderToString));
                     break;
             }
             publishProgress(80);

@@ -14,4 +14,7 @@ public interface ResponseEvent {
 
     }
 
+    default void onPreExecute() {
+
+    }
 }

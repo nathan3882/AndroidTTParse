@@ -3,10 +3,11 @@ package me.nathan3882.androidttrainparse.fragments;
 import android.app.Activity;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import me.nathan3882.androidttrainparse.activities.TimeDisplayActivity;
 import me.nathan3882.androidttrainparse.BundleName;
 import me.nathan3882.androidttrainparse.LessonInfo;
+import me.nathan3882.androidttrainparse.User;
 import me.nathan3882.androidttrainparse.Util;
+import me.nathan3882.androidttrainparse.activities.TimeDisplayActivity;
 import me.nathan3882.androidttrainparse.requesting.IActivityReferencer;
 
 import java.lang.ref.WeakReference;
@@ -43,10 +44,11 @@ public class DayFragmentFactory implements IActivityReferencer<Activity> {
     }
 
     @Nullable
-    public DayLessonsFragment createHasLessonsFragment(List<LessonInfo> lessonInfo) {
+    public DayLessonsFragment createHasLessonsFragment(User user, List<LessonInfo> lessonInfo) {
 
         DayLessonsFragment dayFragment = new DayLessonsFragment();
 
+        dayFragment.synchroniseUser(user);
         dayFragment.synchroniseLessonInfo(lessonInfo);
 
         Bundle bundle = new Bundle();

@@ -16,6 +16,7 @@ public class Util {
     public static final String LESSON_STORAGE_SPLIT_CHAR = ", ";
     public static final String DEFAULT_TTRAINPARSE = "http://nathan3882.me/api/apps/ttrainparse/";
     public static final long ONE_HALF_SECS = 1500L;
+    public static final String BREAK = "<br>";
     private static final String TOKEN = "aToken";
     public static final String PARAMS = "?format=json&token=" + TOKEN;
 
@@ -70,5 +71,11 @@ public class Util {
 
     public static void dimBackground(WindowManager.LayoutParams wp, float dimAmount) {
         wp.dimAmount = dimAmount;
+    }
+
+    public static String getPrettyMinute(int minute) {
+        String prettyMinute = String.valueOf(minute);
+        if (minute < 10) prettyMinute = "0" + prettyMinute;
+        return prettyMinute;
     }
 }

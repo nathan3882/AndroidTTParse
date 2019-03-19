@@ -152,7 +152,6 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity
         int daysToShowLength = daysToShow.length;
         for (int i = 0; i < daysToShowLength; i++) {
             DayOfWeek dayToShow = daysToShow[i];
-            System.out.println("i = " + i + " day to show = " + dayToShow.name());
 
             boolean lastExecution = i == daysToShowLength - 1;
 
@@ -161,8 +160,6 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity
                 public void registerReturn() {
                     if (lastExecution) {
                         initiatePagers();
-                        System.out.println("initiate pagers" +
-                                "");
                     }
                 }
             });
@@ -177,16 +174,16 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity
             String key = daysBundleName.name();
             hasOcrStored = getInitialBundle().containsKey(key);
             if (hasOcrStored) {
-                System.out.println("has ocr stored locally");
+                //has ocr stored locally
                 String storedOcr = getInitialBundle().getString(key);
                 if (storedOcr != null && !allDaysLessonInfo.containsKey(dayToShow)) {
                     //Has ocr in the bundle from the fetchAndStoreOcr function, but not in the all days lesson info
                     List<LessonInfo> lessonInfos = defineLessonInfo(dayToShow, storedOcr);
-                    if (lessonInfos.size() != 0 && !storedOcr.equalsIgnoreCase("null")) {
-                            allDaysLessonInfo.put(dayToShow, lessonInfos);
-                            getInitialBundle().putString(daysBundleName.asString(), storedOcr);
-                            hasLessonInfo = true;
-                        }
+                    if (hasSqlValue(storedOcr, lessonInfos)) {
+                        allDaysLessonInfo.put(dayToShow, lessonInfos);
+                        getInitialBundle().putString(daysBundleName.asString(), storedOcr);
+                        hasLessonInfo = true;
+                    }
                 }
             }
         }
@@ -202,8 +199,7 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity
                         String fetchedDepletedOcrString = ocrRequestResponseData.getDepletedOcrString();
 
                         List<LessonInfo> lessonInfos = defineLessonInfo(dayToShow, fetchedDepletedOcrString);
-                        System.out.println("The size for " + lessonInfos.size() + " day = " + dayToShow.name());
-                        if (lessonInfos.size() != 0 && !fetchedDepletedOcrString.equalsIgnoreCase("null")) {
+                        if (hasSqlValue(fetchedDepletedOcrString, lessonInfos)) {
                             if (daysBundleName != null) {
                                 allDaysLessonInfo.put(dayToShow, lessonInfos);
                                 getInitialBundle().putString(daysBundleName.asString(), fetchedDepletedOcrString);
@@ -218,6 +214,10 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity
         }
 
         return hasLessonInfo;
+    }
+
+    private boolean hasSqlValue(String storedOcr, List<LessonInfo> lessonInfos) {
+        return lessonInfos.size() != 0 && !storedOcr.equalsIgnoreCase("null");
     }
 
     private void initiatePagers() {
@@ -273,7 +273,7 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity
                 DayFragment gotten = previousFragments.get(dayOfWeek);
 
                 if (gotten instanceof DayLessonsFragment) {
-
+                    System.out.println(dayOfWeek.name() + " instanceof DayLessonsFragment");
                     // if has already made instance of it & is an instance that has lessons
                     // - get the lessons the user had configured at the time of instantiation
                     // - then see if contains different lessons, if so, redo with new lesson names
@@ -293,17 +293,19 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity
                             same = false;
                             break;
                         }
+                        System.out.println(dayOfWeek.name() + " lesson " + lesson);
                     }
                     if (same) {
+                        System.out.println(dayOfWeek.name() + "same lessons");
                         return fragment; //return stored
                     } else {
-
+                        removeFromStoredFragments(dayOfWeek); //new set of lessons, must remove and redo
                     }
                 }
-                // If got to this stage, "same" hasn't been
-                // true and the DayFragment is instanceof DayNoLessonsFragment so must need rechecking
-                removeFromStoredFragments(dayOfWeek);
             }
+
+            // If got to this stage, "same" hasn't been
+            // true and the DayFragment is instanceof DayNoLessonsFragment so must need rechecking
 
             // If got to this stage, either one of the following is true:
             // - the user hasn't got data for that specific day
@@ -320,12 +322,12 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity
 
             if (hasLessonInfoForDay) {
                 List<LessonInfo> infoForDay = getAllDaysLessonInfo().get(dayOfWeek);
-
-                lessonsFragment = dayFragmentFactory.createHasLessonsFragment(infoForDay);
+                lessonsFragment = dayFragmentFactory.createHasLessonsFragment(user, infoForDay);
             } else { //no lesson info for that day
                 // either error occurred in the doOcr function or user doesn't have it in database
                 lessonsFragment = dayFragmentFactory.createNoLessonsFragment();
             }
+            System.out.println("redo " + dayOfWeek.name());
             addToStoredFragments(dayOfWeek, lessonsFragment);
             return lessonsFragment;
         }

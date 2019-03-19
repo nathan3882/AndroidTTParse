@@ -2,6 +2,7 @@ package me.nathan3882.androidttrainparse.fragments;
 
 import android.os.Bundle;
 import me.nathan3882.androidttrainparse.BundleName;
+import me.nathan3882.androidttrainparse.responding.ResponseEvent;
 
 import java.time.DayOfWeek;
 
@@ -26,6 +27,12 @@ public class DayNoLessonsFragment extends DayFragment {
     }
 
     @Override
+    public void makeStringToDisplay(StringBuilder builder, ResponseEvent event) {
+        builder.append(stringToDisplay);
+        event.doFinally();
+    }
+
+    @Override
     public String getHeader() {
         return this.header;
     }
@@ -33,10 +40,5 @@ public class DayNoLessonsFragment extends DayFragment {
     @Override
     public DayOfWeek getDayOfWeek() {
         return this.dayOfWeek;
-    }
-
-    @Override
-    public StringBuilder getStringToDisplay() {
-        return this.stringToDisplay;
     }
 }

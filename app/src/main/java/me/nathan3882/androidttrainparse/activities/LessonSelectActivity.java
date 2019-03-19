@@ -250,7 +250,7 @@ public class LessonSelectActivity extends AbstractPostLoginActivity implements I
     }
 
     private String getPrefix() {
-        return "<br>" + "- ";
+        return Util.BREAK + "- ";
     }
 
 }

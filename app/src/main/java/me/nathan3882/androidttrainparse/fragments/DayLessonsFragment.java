@@ -1,22 +1,33 @@
 package me.nathan3882.androidttrainparse.fragments;
 
 import android.os.Bundle;
-import me.nathan3882.androidttrainparse.BundleName;
-import me.nathan3882.androidttrainparse.LessonInfo;
+import android.support.annotation.NonNull;
+import android.widget.Toast;
+import me.nathan3882.androidttrainparse.*;
+import me.nathan3882.androidttrainparse.requesting.Action;
+import me.nathan3882.androidttrainparse.requesting.GetRequest;
+import me.nathan3882.androidttrainparse.responding.*;
+import org.json.JSONObject;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @instantiated by DayFragmentFactory#createHasLessonsFragment
  */
 public class DayLessonsFragment extends DayFragment {
 
+    public static final int MAX_TRAINS_PER_LESSON = 2;
+    private static final long DAY_TRAIN_RELEARN_COUNT = 28; //28 days until must relearn the trains
     private List<LessonInfo> lessonInfo;
     private ArrayList<String> lessons;
+    private boolean showTrainsForEveryLesson = true;
+
+
+    public DayLessonsFragment() {
+    }
 
     public void synchroniseLessonInfo(List<LessonInfo> lessonInfo) {
         this.lessonInfo = lessonInfo;
@@ -39,37 +50,93 @@ public class DayLessonsFragment extends DayFragment {
             this.dayOfWeek = DayOfWeek.of(args.getInt(BundleName.DAY_OF_WEEK_TO_SHOW.asString()));
             this.header = args.getString(BundleName.HEADER_NO_HTML.asString());
             this.lessons = args.getStringArrayList(BundleName.LESSONS.asString());
-
         }
     }
 
+
     @Override
-    public StringBuilder getStringToDisplay() {
-        StringBuilder mainString = new StringBuilder();
+    public void makeStringToDisplay(StringBuilder mainString, ResponseEvent event) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+
+        Calendar lessonTimeCal = Calendar.getInstance();
+        lessonTimeCal.setTime(new Date());
+
         mainString.append("<html><center>");
         List<LessonInfo> infoForOneDay = getLessonInfo();
         for (int i = 0; i < infoForOneDay.size(); i++) {
-            LessonInfo lessonDifTimes = infoForOneDay.get(i);
-            if (i != 0) mainString.append("<br>");
-            LinkedList<String> les = lessonDifTimes.getLessons();
+            LessonInfo collegeDay = infoForOneDay.get(i);
+            if (i != 0) mainString.append(Util.BREAK);
+            LinkedList<String> les = collegeDay.getLessons();
             for (String lessonName : les) {
-                List<LocalTime> startTimes = lessonDifTimes.getStartTimes(lessonName);
-                List<LocalTime> finishTimes = lessonDifTimes.getFinishTimes(lessonName);
+                List<LocalTime> startTimes = collegeDay.getStartTimes(lessonName);
+                List<LocalTime> finishTimes = collegeDay.getFinishTimes(lessonName);
                 for (int k = 0; k < startTimes.size(); k++) {
-                    LocalTime startTime = startTimes.get(k);
+
+                    LocalTime aLessonsStartTime = startTimes.get(k);
+
+                    DayOfWeek today = DayOfWeek.of(calendar.get(Calendar.DAY_OF_WEEK));
+                    DayOfWeek dayOfLesson = collegeDay.getDayOfWeek();
+                    int dif = dayOfLesson.getValue() - today.getValue();
+
+                    updateLessonCalendar(calendar, lessonTimeCal, aLessonsStartTime, dif);
+
+                    Date aLessonsStartDate = lessonTimeCal.getTime();
+
                     LocalTime finishTime = finishTimes.get(k);
 
-                    String startString = getPrettyMinute(startTime.getMinute());
-                    String endString = getPrettyMinute(finishTime.getMinute());
+                    String prettyStartMinutesString = Util.getPrettyMinute(aLessonsStartTime.getMinute());
+                    String prettyEndMinutesString = Util.getPrettyMinute(finishTime.getMinute());
 
-                    mainString.append(lessonName).append(" lesson number ").append(k + 1).append(":<br>Starts at ").append(startTime.getHour()).append(":").append(startString).append(" and Ends at:<br>").append(finishTime.getHour()).append(" ").append(endString).append("<br>");
-                    if (k != 0) mainString.append("<br>");
+                    String startsAtPrettyString = aLessonsStartTime.getHour() + ":" + prettyStartMinutesString;
+                    String finishesAtPrettyString = finishTime.getHour() + ":" + prettyEndMinutesString;
 
+
+                    int lastLesson = k - 1;
+                    if (showTrainsForEveryLesson || k == 0 || k == lastLesson) {
+                        int finalK = k;
+                        getPotentialTwoBestLearnedTrains(aLessonsStartDate, new ResponseEvent() {
+
+                            @Override
+                            public void onCompletion(@NonNull RequestResponse requestResponse) {
+                                mainString.append(Util.BREAK);
+                                mainString.append(lessonName + " lesson number " + (finalK + 1) +
+                                        " starts at " + startsAtPrettyString +
+                                        " and ends at " + finishesAtPrettyString
+                                        + Util.BREAK);
+                                RequestResponseData data = requestResponse.getData();
+                                if (data instanceof GetBestTrainsRequestResponseData) {
+                                    GetBestTrainsRequestResponseData bestTrainsData = (GetBestTrainsRequestResponseData) data;
+                                    for (Service service : bestTrainsData.getMostCommonServices()) {
+                                        appendTrainToDisplayStr(mainString, service.getDeparture(), service.getArrival(), service.getWalk());
+                                    }
+                                }
+                                event.onCompletion(requestResponse);
+                            }
+
+                            @Override
+                            public void onFailure() {
+                                Toast.makeText(getContainer().getContext(), "An error occurred whilst inserting train data to learn for the future!", Toast.LENGTH_LONG)
+                                        .show();
+                                mainString.append("No trains found for this lesson...");
+                                event.onFailure();
+                            }
+
+                            @Override
+                            public void doFinally() {
+                                if (finalK == lastLesson) {
+                                    mainString.append(Util.BREAK);
+                                    mainString.append("</center></html>");
+                                }
+                                event.doFinally();
+                            }
+                        });
+                        //Here is where the end of a lesson's train times iteration breaks,
+                        //checks whether it's the last lesson for that day, if so TTrainParser.BREAK
+                    }
                 }
             }
         }
-        mainString.append("</center></html>");
-        return mainString;
     }
 
     @Override
@@ -82,9 +149,45 @@ public class DayLessonsFragment extends DayFragment {
         return this.dayOfWeek;
     }
 
-    private String getPrettyMinute(int minute) {
-        String prettyMinute = String.valueOf(minute);
-        if (minute < 10) prettyMinute = "0" + prettyMinute;
-        return prettyMinute;
+    /**
+     * @returns a list of (lists that contain 2 best trains)
+     */
+    private LinkedList<LinkedList<JSONObject>> getPotentialTwoBestLearnedTrains(Date aLessonsStartDate, ResponseEvent event) {
+        LinkedList<LinkedList<JSONObject>> learned = new LinkedList<>();
+        TrainDate trainDate = new TrainDate(aLessonsStartDate);
+
+        String columnName = trainDate.withoutColon();
+
+        long currentMillis = System.currentTimeMillis();
+
+        long aMonthInMillis = TimeUnit.DAYS.toMillis(DAY_TRAIN_RELEARN_COUNT);
+
+        /**
+         * Selects the time column for example 900 for 9am lesson which contains json object like this:
+         "{ crs: "BMH" departure: "10:05", arrival: "11:05", walk: "8"};" //crs = homeCrs, d = departure time, a = arrival to brock time, walk: different in mins between arrival and lesson start time
+         */
+        Client client = new Client(Util.DEFAULT_TTRAINPARSE, Action.GET_BEST_TRAINS);
+
+        System.out.println("train date without colon = " + trainDate.withoutColon());
+        new GetRequest(client,
+                "/" + trainDate.withoutColon() + "/" + getUser().getHomeCrs() + Util.PARAMS, event)
+                .execute();
+
+
+        return learned;
+    }
+
+    private void appendTrainToDisplayStr(StringBuilder mainString, String departureString, String arrivalString, long difFromLesson) {
+        mainString.append(departureString
+                + " from " + getUser().getHomeCrs() +
+                " that arrives @ " + arrivalString +
+                ". (" + difFromLesson + "mins before lesson)" + Util.BREAK);
+    }
+
+    private void updateLessonCalendar(Calendar calendar, Calendar lessonTimeCal, LocalTime aLessonsStartTime, int dif) {
+        lessonTimeCal.set(Calendar.HOUR_OF_DAY, aLessonsStartTime.getHour());
+        lessonTimeCal.set(Calendar.MINUTE, aLessonsStartTime.getMinute());
+        lessonTimeCal.set(Calendar.SECOND, aLessonsStartTime.getSecond());
+        lessonTimeCal.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + dif);
     }
 }
