@@ -45,12 +45,15 @@ public class GetRequest extends AsyncTask<String, Integer, RequestResponse> {
             publishProgress(15);
             conn.connect();
             publishProgress(45);
-            //Set data few lines down
+            //Set data few lines do wn
 
             requestResponse = new RequestResponse(webService, getAction(), conn.getResponseCode(), null);
 
-            if (requestResponse.getResponseCode() == 404) return requestResponse;
-
+            int responseCode = requestResponse.getResponseCode();
+            if (responseCode >= 400 && responseCode <= 499) {
+                System.err.println("response code for " + webService + " + " + getAction().name() + " was " + responseCode);
+            return requestResponse;
+        }
             BufferedReader in = new BufferedReader(
                     new InputStreamReader(conn.getInputStream()));
             StringBuilder builder = new StringBuilder();

@@ -1,6 +1,7 @@
 package me.nathan3882.androidttrainparse.fragments;
 
 import android.os.Bundle;
+import android.text.SpannableStringBuilder;
 import me.nathan3882.androidttrainparse.BundleName;
 import me.nathan3882.androidttrainparse.responding.ResponseEvent;
 
@@ -27,7 +28,7 @@ public class DayNoLessonsFragment extends DayFragment {
     }
 
     @Override
-    public void makeStringToDisplay(StringBuilder builder, ResponseEvent event) {
+    public void makeStringToDisplay(SpannableStringBuilder builder, ResponseEvent event) {
         builder.append(stringToDisplay);
         event.doFinally();
     }

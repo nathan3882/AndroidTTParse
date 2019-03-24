@@ -11,51 +11,46 @@
             android:text="headerText"
             android:layout_width="333dp"
             android:layout_height="87dp" android:id="@+id/headerText"
-            app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginStart="36dp"
-            android:gravity="top|left"
-            app:layout_constraintEnd_toEndOf="parent" android:layout_marginEnd="8dp"
-            app:layout_constraintHorizontal_bias="0.428"
+            android:gravity="top|center"
             android:visibility="visible"
             android:textAppearance="@style/TextAppearance.AppCompat.Body1"
             android:textSize="13sp"
             android:fontFamily="@font/montserrat"
 
-            app:layout_constraintTop_toBottomOf="@+id/lessonSelectHeader" android:layout_marginTop="4dp"/>
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginEnd="8dp" app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginStart="8dp" android:layout_marginTop="8dp"
+            app:layout_constraintTop_toBottomOf="@+id/lessonSelectHeader"/>
     <EditText
             android:layout_width="173dp"
             android:layout_height="39dp"
             android:ems="10"
             android:id="@+id/addLessonInputBox"
             tools:textSize="14sp"
-            app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginStart="36dp"
             android:textAppearance="@style/TextAppearance.AppCompat.Body2"
             android:fontFamily="@font/montserrat"
             android:inputType="textAutoCorrect" android:textAlignment="viewStart"
-            app:layout_constraintTop_toBottomOf="@+id/addBelow"
-            android:layout_marginTop="8dp"/>
+            app:layout_constraintTop_toBottomOf="@+id/addBelow" app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginEnd="8dp" app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginStart="8dp" app:layout_constraintHorizontal_bias="0.502"/>
     <Button
             android:text="Remove"
-            android:layout_width="108dp"
-            android:layout_height="48dp"
+            android:layout_width="174dp"
+            android:layout_height="45dp"
             android:id="@+id/removeLessonButton"
             android:visibility="visible" android:fontFamily="@font/montserrat" android:textSize="16sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            android:layout_marginBottom="108dp" android:layout_marginEnd="16dp"
-            app:layout_constraintStart_toEndOf="@+id/removeLessonInputBox" android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp" app:layout_constraintTop_toBottomOf="@+id/removeLessonBelow"/>
+            app:layout_constraintTop_toBottomOf="@+id/removeLessonInputBox" app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginEnd="8dp" app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginStart="8dp"/>
     <Button
             android:text="Add"
             android:layout_width="78dp"
-            android:layout_height="45dp"
+            android:layout_height="47dp"
             android:id="@+id/addLessonButton"
             android:visibility="visible" android:fontFamily="@font/montserrat" android:textSize="16sp"
-            app:layout_constraintEnd_toEndOf="parent" android:layout_marginEnd="20dp"
-            app:layout_constraintStart_toEndOf="@+id/addLessonInputBox"
-            android:layout_marginStart="8dp" android:layout_marginTop="8dp"
-            app:layout_constraintTop_toBottomOf="@+id/addBelow" app:layout_constraintHorizontal_bias="0.478"/>
+            app:layout_constraintTop_toBottomOf="@+id/addLessonInputBox" app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginEnd="8dp" app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginStart="8dp"/>
     <ProgressBar
             style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="352dp"
@@ -71,10 +66,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/lessonSelectHeader"
-            android:fontFamily="@font/montserrat" android:textSize="24sp" app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginStart="8dp" app:layout_constraintEnd_toEndOf="parent" android:layout_marginEnd="8dp"
-            app:layout_constraintHorizontal_bias="0.139" app:layout_constraintTop_toTopOf="parent"
-            android:layout_marginTop="40dp"/>
+            android:fontFamily="@font/montserrat" android:textSize="24sp"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginTop="32dp" app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginStart="8dp" app:layout_constraintEnd_toEndOf="parent" android:layout_marginEnd="8dp"/>
     <TextView
             android:text="Add a lesson"
             android:layout_width="wrap_content"
@@ -83,34 +78,33 @@
             android:textSize="24sp"
             app:layout_constraintStart_toStartOf="parent"
             android:layout_marginStart="8dp" app:layout_constraintEnd_toEndOf="parent" android:layout_marginEnd="8dp"
-            app:layout_constraintHorizontal_bias="0.129" android:layout_marginTop="60dp"
-            app:layout_constraintTop_toBottomOf="@+id/headerText"/>
+            android:layout_marginTop="8dp" app:layout_constraintTop_toBottomOf="@+id/headerText"/>
     <TextView
             android:text="Remove a lesson"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/removeLessonBelow" android:textSize="24sp"
-            android:fontFamily="@font/montserrat" app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginStart="36dp"
-            android:layout_marginTop="16dp" app:layout_constraintTop_toBottomOf="@+id/addLessonInputBox"/>
+            android:fontFamily="@font/montserrat"
+            android:layout_marginTop="24dp"
+            app:layout_constraintTop_toBottomOf="@+id/addLessonButton" app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginEnd="8dp" app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginStart="8dp" app:layout_constraintHorizontal_bias="0.502"/>
     <EditText
             android:layout_width="174dp"
             android:layout_height="wrap_content"
             android:ems="10"
             android:id="@+id/removeLessonInputBox" android:inputType="textAutoCorrect" android:textSize="14sp"
-            android:fontFamily="@font/montserrat" android:textAlignment="viewStart" android:layout_marginTop="8dp"
-            app:layout_constraintTop_toBottomOf="@+id/removeLessonBelow" app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginStart="36dp"
-            app:layout_constraintBottom_toBottomOf="parent" android:layout_marginBottom="8dp"
-            app:layout_constraintVertical_bias="0.0"/>
-    <ImageView
-            android:layout_width="88dp"
-            android:layout_height="56dp" app:srcCompat="@drawable/rail_icon"
-            android:id="@+id/toTrainsButton"
-            android:visibility="visible" android:layout_marginTop="20dp"
-            app:layout_constraintTop_toBottomOf="@+id/removeLessonInputBox"
-            app:layout_constraintBottom_toBottomOf="parent" android:layout_marginBottom="8dp"
+            android:fontFamily="@font/montserrat" android:textAlignment="viewStart"
+            app:layout_constraintTop_toBottomOf="@+id/removeLessonBelow"
             app:layout_constraintEnd_toEndOf="parent" android:layout_marginEnd="8dp"
             app:layout_constraintStart_toStartOf="parent" android:layout_marginStart="8dp"/>
+    <ImageView
+            android:layout_width="303dp"
+            android:layout_height="48dp" app:srcCompat="@drawable/show_lessons"
+            android:id="@+id/toTrainsButton" android:layout_marginTop="44dp"
+            app:layout_constraintTop_toBottomOf="@+id/removeLessonButton" app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginStart="8dp" app:layout_constraintEnd_toEndOf="parent" android:layout_marginEnd="8dp"
+            app:layout_constraintBottom_toBottomOf="parent" android:layout_marginBottom="8dp"
+            app:layout_constraintHorizontal_bias="0.507" app:layout_constraintVertical_bias="1.0"/>
 
 </android.support.constraint.ConstraintLayout>

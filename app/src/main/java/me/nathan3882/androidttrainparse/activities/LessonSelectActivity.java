@@ -48,6 +48,11 @@ public class LessonSelectActivity extends AbstractPostLoginActivity implements I
         return allowLessonModification;
     }
 
+    @Override
+    public int getProgressBarRid() {
+        return this.progressBar.getId();
+    }
+
     private void setAllowLessonModification(boolean value) {
         this.allowLessonModification = value;
         if (value) showToast("You can now add/remove lessons.", "long", true);
@@ -92,11 +97,21 @@ public class LessonSelectActivity extends AbstractPostLoginActivity implements I
 
         refreshHeaderText();
 
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
         addLessonButton.setOnClickListener(getAddRemoveListener(true));
 
         removeLessonButton.setOnClickListener(getAddRemoveListener(false));
 
-        toTrainsButton.setOnClickListener(getToTrainsListener());
+        toTrainsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                MainActivity.startTimeDisplayActivity(getWeakReference(), LessonSelectActivity.this, getUser(), true);
+            }
+        });
     }
 
     @Override
@@ -134,16 +149,6 @@ public class LessonSelectActivity extends AbstractPostLoginActivity implements I
         return weakReference;
     }
 
-    @Override
-    public int getProgressBarRid() {
-        return this.progressBar.getId();
-    }
-
-    private View.OnClickListener getToTrainsListener() {
-        return view -> {
-            MainActivity.startTimeDisplayActivity(getWeakReference(), this, getUser(), true);
-        };
-    }
 
     private View.OnClickListener getAddRemoveListener(boolean addingLesson) {
         return view -> {
@@ -167,7 +172,7 @@ public class LessonSelectActivity extends AbstractPostLoginActivity implements I
                 setAllowLessonModification(false);
                 if (addingLesson) {
                     //add lesson
-                    addLessonProgressed(oneOrMoreLessons, getWeakReference(), this, new ResponseEvent() {
+                    addLesson(oneOrMoreLessons, new ResponseEvent() {
                         @Override
                         public void onCompletion(@NonNull RequestResponse requestResponse) {
 
@@ -190,7 +195,7 @@ public class LessonSelectActivity extends AbstractPostLoginActivity implements I
                     });
                 } else {
                     //remove lesson
-                    removeLessonProgressed(oneOrMoreLessons, getWeakReference(), this, new ResponseEvent() {
+                    removeLesson(oneOrMoreLessons, new ResponseEvent() {
                         @Override
                         public void onCompletion(@NonNull RequestResponse requestResponse) {
                             showToast("Lesson, " + oneOrMoreLessons + ", removed!", "long", true);
@@ -250,7 +255,7 @@ public class LessonSelectActivity extends AbstractPostLoginActivity implements I
     }
 
     private String getPrefix() {
-        return Util.BREAK + "- ";
+        return Util.SPANNABLE_BREAK + "- ";
     }
 
 }

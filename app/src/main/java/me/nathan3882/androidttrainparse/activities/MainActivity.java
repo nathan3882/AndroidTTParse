@@ -79,11 +79,7 @@ public class MainActivity extends AppCompatActivity implements IActivityReferenc
     private static void startTimeDisplayIntent(Activity activity, User user) {
 
         Intent toTimeDisplay = new Intent(activity, TimeDisplayActivity.class);
-        Bundle bundle = new Bundle();
-        bundle.putString(BundleName.EMAIL.asString(), user.getUserEmail());
-        bundle.putStringArrayList(BundleName.LESSONS.asString(), user.getLocalLessons());
-        bundle.putString(BundleName.HOME_CRS.asString(), user.getHomeCrs());
-        bundle.putBoolean(BundleName.USER_LESSONS_POPULATED.asString(), true);
+        Bundle bundle = user.newBundle();
         bundle.putIntArray(BundleName.DAYS_TO_SHOW.asString(), getDaysToShow(getCalendar().get(Calendar.DAY_OF_WEEK)));
         toTimeDisplay.putExtras(bundle);
         activity.startActivity(toTimeDisplay);
@@ -91,9 +87,7 @@ public class MainActivity extends AppCompatActivity implements IActivityReferenc
 
     public static void startLessonSelect(WeakReference<Activity> reference, ProgressBarable barable, User user) {
         Intent msgToLessonSelectActivity = new Intent(reference.get(), LessonSelectActivity.class);
-        Bundle bundleForLessonSelect = new Bundle();
-        bundleForLessonSelect.putString(BundleName.EMAIL.asString(), user.getUserEmail());
-        bundleForLessonSelect.putString(BundleName.HOME_CRS.asString(), user.getHomeCrs());
+        Bundle bundleForLessonSelect = user.newBundle();
 
         user.synchroniseWithDatabase(new ResponseEvent() {
             @Override

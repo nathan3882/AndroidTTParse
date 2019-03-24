@@ -2,10 +2,12 @@ package me.nathan3882.androidttrainparse.fragments;
 
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.text.SpannableStringBuilder;
 import android.widget.Toast;
 import me.nathan3882.androidttrainparse.*;
 import me.nathan3882.androidttrainparse.requesting.Action;
 import me.nathan3882.androidttrainparse.requesting.GetRequest;
+import me.nathan3882.androidttrainparse.requesting.Pair;
 import me.nathan3882.androidttrainparse.responding.*;
 import org.json.JSONObject;
 
@@ -42,35 +44,24 @@ public class DayLessonsFragment extends DayFragment {
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        Bundle args = getArguments();
-        if (args != null) {
-            this.dayOfWeek = DayOfWeek.of(args.getInt(BundleName.DAY_OF_WEEK_TO_SHOW.asString()));
-            this.header = args.getString(BundleName.HEADER_NO_HTML.asString());
-            this.lessons = args.getStringArrayList(BundleName.LESSONS.asString());
-        }
-    }
+    public void makeStringToDisplay(SpannableStringBuilder mainString, ResponseEvent event) {
 
 
-    @Override
-    public void makeStringToDisplay(StringBuilder mainString, ResponseEvent event) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(new Date());
 
         Calendar lessonTimeCal = Calendar.getInstance();
         lessonTimeCal.setTime(new Date());
-
-        mainString.append("<html><center>");
         List<LessonInfo> infoForOneDay = getLessonInfo();
+        Pair pair = new Pair();
         for (int i = 0; i < infoForOneDay.size(); i++) {
             LessonInfo collegeDay = infoForOneDay.get(i);
-            if (i != 0) mainString.append(Util.BREAK);
+            if (i != 0) mainString.append(Util.SPANNABLE_BREAK);
             LinkedList<String> les = collegeDay.getLessons();
             for (String lessonName : les) {
                 List<LocalTime> startTimes = collegeDay.getStartTimes(lessonName);
                 List<LocalTime> finishTimes = collegeDay.getFinishTimes(lessonName);
+                if (startTimes == null) continue;
                 for (int k = 0; k < startTimes.size(); k++) {
 
                     LocalTime aLessonsStartTime = startTimes.get(k);
@@ -99,18 +90,59 @@ public class DayLessonsFragment extends DayFragment {
 
                             @Override
                             public void onCompletion(@NonNull RequestResponse requestResponse) {
-                                mainString.append(Util.BREAK);
-                                mainString.append(lessonName + " lesson number " + (finalK + 1) +
-                                        " starts at " + startsAtPrettyString +
-                                        " and ends at " + finishesAtPrettyString
-                                        + Util.BREAK);
+                                mainString.append(Util.SPANNABLE_BREAK);
+
+                                List<Pair.IntegerIntegerPair> lowerUpperForBigFont = new ArrayList<>();
+                                List<Pair.IntegerIntegerPair> lowerUpperForSmallFont = new ArrayList<>();
+
+                                int lowerBig = mainString.length();
+
+                                String lessonStringToAppend = "You have " + lessonName + " #" + (finalK + 1) +
+                                        " from " + startsAtPrettyString + " until " + finishesAtPrettyString
+                                        + Util.SPANNABLE_BREAK;
+
+                                int upperBig = lowerBig + lessonStringToAppend.length();
+
+                                lowerUpperForBigFont.add(pair.new IntegerIntegerPair(lowerBig, upperBig));
+                                mainString.append(lessonStringToAppend);
+
+
+
+                                SpannableStringBuilder trainString = new SpannableStringBuilder();
+
+
                                 RequestResponseData data = requestResponse.getData();
                                 if (data instanceof GetBestTrainsRequestResponseData) {
-                                    GetBestTrainsRequestResponseData bestTrainsData = (GetBestTrainsRequestResponseData) data;
-                                    for (Service service : bestTrainsData.getMostCommonServices()) {
-                                        appendTrainToDisplayStr(mainString, service.getDeparture(), service.getArrival(), service.getWalk());
+                                    GetBestTrainsRequestResponseData bestTrainsData =
+                                            (GetBestTrainsRequestResponseData) data;
+
+                                    LinkedList<Service> mostCommonServices = bestTrainsData.getMostCommonServices();
+
+                                    if (!mostCommonServices.isEmpty()) {
+
+                                        trainString.append("Catch the...");
+                                        for (Service service : mostCommonServices) {
+                                            int lower = trainString.length();
+                                            String toAppend = service.getDeparture()
+                                                    + " from " + getUser().getHomeCrs() +
+                                                    " arriving @ " + service.getArrival() +
+                                                    " - " + service.getWalk() + "m walk)" + Util.SPANNABLE_BREAK;
+                                            int upper = lower + toAppend.length();
+                                            trainString.append(toAppend);
+                                            lowerUpperForSmallFont.add(pair.new IntegerIntegerPair(lower, upper));
+                                        }
+                                        mainString.append(trainString + Util.SPANNABLE_BREAK);
+
                                     }
                                 }
+                                /*lowerUpperForBigFont.forEach(pair -> {
+                                    mainString.setSpan(new AbsoluteSizeSpan(75),
+                                            pair.getKey(), pair.getValue(), Spannable.SPAN_INCLUSIVE_INCLUSIVE);
+                                });
+                                lowerUpperForSmallFont.forEach(pair -> {
+                                    mainString.setSpan(new AbsoluteSizeSpan(50),
+                                            pair.getKey(), pair.getValue(), Spannable.SPAN_INCLUSIVE_INCLUSIVE);
+                                });*/
                                 event.onCompletion(requestResponse);
                             }
 
@@ -125,8 +157,7 @@ public class DayLessonsFragment extends DayFragment {
                             @Override
                             public void doFinally() {
                                 if (finalK == lastLesson) {
-                                    mainString.append(Util.BREAK);
-                                    mainString.append("</center></html>");
+                                    mainString.append(Util.SPANNABLE_BREAK);
                                 }
                                 event.doFinally();
                             }
@@ -147,6 +178,18 @@ public class DayLessonsFragment extends DayFragment {
     @Override
     public DayOfWeek getDayOfWeek() {
         return this.dayOfWeek;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        Bundle args = getArguments();
+        if (args != null) {
+            this.dayOfWeek = DayOfWeek.of(args.getInt(BundleName.DAY_OF_WEEK_TO_SHOW.asString()));
+            this.header = args.getString(BundleName.HEADER_NO_HTML.asString());
+            this.lessons = args.getStringArrayList(BundleName.LESSONS.asString());
+        }
     }
 
     /**
@@ -175,13 +218,6 @@ public class DayLessonsFragment extends DayFragment {
 
 
         return learned;
-    }
-
-    private void appendTrainToDisplayStr(StringBuilder mainString, String departureString, String arrivalString, long difFromLesson) {
-        mainString.append(departureString
-                + " from " + getUser().getHomeCrs() +
-                " that arrives @ " + arrivalString +
-                ". (" + difFromLesson + "mins before lesson)" + Util.BREAK);
     }
 
     private void updateLessonCalendar(Calendar calendar, Calendar lessonTimeCal, LocalTime aLessonsStartTime, int dif) {

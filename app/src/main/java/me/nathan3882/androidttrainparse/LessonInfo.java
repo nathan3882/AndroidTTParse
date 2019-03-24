@@ -37,7 +37,7 @@ public class LessonInfo {
             } catch (Exception exception) {
                 this.setParsedSuccessfully(false);
                 exception.printStackTrace();
-                return;
+                break;
             }
         }
 

@@ -1,6 +1,7 @@
 package me.nathan3882.androidttrainparse;
 
 import android.app.Activity;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import me.nathan3882.androidttrainparse.activities.ProgressBarable;
@@ -23,6 +24,10 @@ public class User implements ManipulableUser {
     private User(String userEmail, String homeCrs) {
         this.userEmail = userEmail;
         this.homeCrs = homeCrs;
+    }
+
+    public static User fromBundle(Bundle bundle) {
+        return new User(bundle.getString(BundleName.EMAIL.asString()), bundle.getString(BundleName.HOME_CRS.asString()));
     }
 
     public static User fromPrimitive(String userEmail, String homeCrs) {
@@ -49,6 +54,21 @@ public class User implements ManipulableUser {
     public void synchronise(@Nullable ArrayList<String> lessonNames) {
         if (lessonNames == null) return;
         this.localLessons = lessonNames;
+    }
+
+    public Bundle newBundle(boolean withLessons) {
+        Bundle bundle = new Bundle();
+        bundle.putString(BundleName.EMAIL.asString(), getUserEmail());
+        bundle.putString(BundleName.HOME_CRS.asString(), getHomeCrs());
+        if (withLessons) {
+            bundle.putStringArrayList(BundleName.LESSONS.asString(), getLocalLessons());
+            bundle.putBoolean(BundleName.USER_LESSONS_POPULATED.asString(), true);
+        }
+        return bundle;
+    }
+
+    public Bundle newBundle() {
+        return newBundle(true);
     }
 
     @Override

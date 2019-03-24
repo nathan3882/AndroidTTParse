@@ -15,8 +15,8 @@ import me.nathan3882.androidttrainparse.fragments.DayFragment;
 import me.nathan3882.androidttrainparse.fragments.DayFragmentFactory;
 import me.nathan3882.androidttrainparse.fragments.DayLessonsFragment;
 import me.nathan3882.androidttrainparse.requesting.Action;
+import me.nathan3882.androidttrainparse.requesting.GetRequest;
 import me.nathan3882.androidttrainparse.requesting.Pair;
-import me.nathan3882.androidttrainparse.requesting.ProgressedGetRequest;
 import me.nathan3882.androidttrainparse.responding.OcrRequestResponseData;
 import me.nathan3882.androidttrainparse.responding.RequestResponse;
 import me.nathan3882.androidttrainparse.responding.RequestResponseData;
@@ -28,7 +28,7 @@ import java.time.DayOfWeek;
 import java.util.*;
 
 public class TimeDisplayActivity extends AbstractPostLoginActivity
-        implements DayFragment.OnFragmentInteractionListener, ProgressBarable {
+        implements DayFragment.OnFragmentInteractionListener {
 
     private Map<DayOfWeek, List<LessonInfo>> allDaysLessonInfo = new HashMap<>();
     /**
@@ -56,11 +56,6 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity
         return daysToShow;
     }
 
-    @Override
-    public int getProgressBarRid() {
-        return this.progressBar.getId();
-    }
-
     /**
      * BundleName.EMAIL
      * BundleName.HOME_CRS
@@ -79,8 +74,6 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity
         this.weakReference = new WeakReference<>(this);
 
         setInitialBundle(getIntent().getExtras(), savedInstanceState);
-
-        this.progressBar = findViewById(R.id.timeDisplayProgressBar);
 
         int[] stringDays = getInitialBundle().getIntArray(BundleName.DAYS_TO_SHOW.asString()); //From lessonSelectActivity
 
@@ -238,7 +231,7 @@ public class TimeDisplayActivity extends AbstractPostLoginActivity
 
     private void fetchAndStoreOcr(DayOfWeek dayToShow, ResponseEvent event) {
         Client client = new Client(Util.DEFAULT_TTRAINPARSE, Action.GET_OCR_STRING);
-        new ProgressedGetRequest(getWeakReference(), getProgressBarRid(), client,
+        new GetRequest(client,
                 ("/" + getUsersEmail() + "/" + dayToShow.name() + Util.PARAMS), event).execute();
     }
 

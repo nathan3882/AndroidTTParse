@@ -17,6 +17,7 @@ public class Util {
     public static final String DEFAULT_TTRAINPARSE = "http://nathan3882.me/api/apps/ttrainparse/";
     public static final long ONE_HALF_SECS = 1500L;
     public static final String BREAK = "<br>";
+    public static final String SPANNABLE_BREAK = "\n";
     private static final String TOKEN = "aToken";
     public static final String PARAMS = "?format=json&token=" + TOKEN;
 

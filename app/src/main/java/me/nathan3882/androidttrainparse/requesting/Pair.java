@@ -52,4 +52,20 @@ public class Pair {
     }
 
 
+    public class IntegerIntegerPair extends Pair {
+        public IntegerIntegerPair(int key, int value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        @Override
+        public Integer getKey() {
+            return (Integer) super.getKey();
+        }
+
+        @Override
+        public Integer getValue() {
+            return (Integer) super.getValue();
+        }
+    }
 }
