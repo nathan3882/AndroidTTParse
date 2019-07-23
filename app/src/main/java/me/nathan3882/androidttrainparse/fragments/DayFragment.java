@@ -28,10 +28,10 @@ public abstract class DayFragment extends Fragment implements ProgressBarable {
 
     protected String header;
     protected String stringToDisplay = null;
+    protected User user;
+    protected ProgressBar progressBar;
     private DayFragment.OnFragmentInteractionListener mListener;
     private ViewGroup container;
-    private User user;
-    private ProgressBar progressBar;
     private ImageView toLessonSelect;
 
 
@@ -44,10 +44,6 @@ public abstract class DayFragment extends Fragment implements ProgressBarable {
     abstract String getHeader();
 
     abstract DayOfWeek getDayOfWeek();
-
-    public void synchroniseUser(User user) {
-        this.user = user;
-    }
 
     @Nullable
     public User getUser() {
@@ -117,11 +113,11 @@ public abstract class DayFragment extends Fragment implements ProgressBarable {
         dayFragHeader.setText(Util.html("<html>" + getHeader() + "</html>"));
 
         TextView actualDisplay = view.findViewById(R.id.lessonDisplay);
+
         SpannableStringBuilder builder = new SpannableStringBuilder();
 
         if (getStringToDisplay() == null) {
             makeStringToDisplay(builder, new ResponseEvent() {
-
                 @Override
                 public void doFinally() {
                     actualDisplay.setText(builder);
