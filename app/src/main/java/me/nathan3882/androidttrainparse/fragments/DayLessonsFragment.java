@@ -31,10 +31,6 @@ public class DayLessonsFragment extends DayFragment {
     public DayLessonsFragment() {
     }
 
-    public void synchroniseLessonInfo(List<LessonInfo> lessonInfo) {
-        this.lessonInfo = lessonInfo;
-    }
-
     public List<LessonInfo> getLessonInfo() {
         return lessonInfo;
     }
@@ -43,9 +39,19 @@ public class DayLessonsFragment extends DayFragment {
         return lessons;
     }
 
+    public DayLessonsFragment synchroniseLessonInfo(List<LessonInfo> lessonInfo) {
+        this.lessonInfo = lessonInfo;
+        return this;
+    }
+
+
+    protected DayLessonsFragment synchroniseUser(User user) {
+        this.user = user;
+        return this;
+    }
+
     @Override
     public void makeStringToDisplay(SpannableStringBuilder mainString, ResponseEvent event) {
-
 
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(new Date());

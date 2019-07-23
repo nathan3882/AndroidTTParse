@@ -46,17 +46,16 @@ public class DayFragmentFactory implements IActivityReferencer<Activity> {
     @Nullable
     public DayLessonsFragment createHasLessonsFragment(User user, List<LessonInfo> lessonInfo) {
 
-        DayLessonsFragment dayFragment = new DayLessonsFragment();
+        DayLessonsFragment dayFragment = new DayLessonsFragment()
+                .synchroniseUser(user)
+                .synchroniseLessonInfo(lessonInfo);
 
-        dayFragment.synchroniseUser(user);
-        dayFragment.synchroniseLessonInfo(lessonInfo);
 
         Bundle bundle = new Bundle();
         bundle.putInt(BundleName.DAY_OF_WEEK_TO_SHOW.asString(), getDayOfWeek().getValue());
         bundle.putString(BundleName.HEADER_NO_HTML.asString(), getPageTitle(true));
 
         if (getReferenceValue() != null) {
-
             ArrayList<String> lessons = ((TimeDisplayActivity) getReferenceValue()).getUsersLocalLessons();
 
             bundle.putStringArrayList(BundleName.LESSONS.asString(), lessons);
